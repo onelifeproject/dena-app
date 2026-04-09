@@ -1,8 +1,13 @@
 import { useState, useEffect } from 'react';
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
 
 export default function AddLoanForm({ onSave, onCancel }) {
   const [name, setName] = useState('');
-  const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
+  
+  // Use pure JS date for DatePicker, we will format it exactly later on submit.
+  const [startDate, setStartDate] = useState(new Date());
+  
   const [principal, setPrincipal] = useState('');
   const [interestPerWeek, setInterestPerWeek] = useState('');
 
@@ -16,9 +21,16 @@ export default function AddLoanForm({ onSave, onCancel }) {
     e.preventDefault();
     if (!name || !principal || !interestPerWeek || !startDate) return;
 
+    // Final conversion to ensure strictly accurate Asia timezone string (YYYY-MM-DD) natively
+    const tzDate = new Date(startDate.toLocaleString("en-US", {timeZone: "Asia/Dhaka"}));
+    const yyyy = tzDate.getFullYear();
+    const mm = String(tzDate.getMonth() + 1).padStart(2, '0');
+    const dd = String(tzDate.getDate()).padStart(2, '0');
+    const dbFormattedDate = `${yyyy}-${mm}-${dd}`;
+
     onSave({
       name,
-      startDate,
+      startDate: dbFormattedDate,
       principal: Number(principal),
       interestPerWeek: Number(interestPerWeek)
     });
@@ -45,14 +57,15 @@ export default function AddLoanForm({ onSave, onCancel }) {
             />
           </div>
 
-          <div className="form-group">
+          <div className="form-group date-picker-wrapper">
             <label className="form-label">টাকা দেওয়ার তারিখ</label>
-            <input 
-              type="date" 
-              className="form-input" 
-              value={startDate}
-              onChange={e => setStartDate(e.target.value)}
-              required
+            <DatePicker 
+               selected={startDate} 
+               onChange={(date) => setStartDate(date)} 
+               className="form-input w-full"
+               dateFormat="dd/MM/yyyy"
+               placeholderText="তারিখ নির্বাচন করুন"
+               required
             />
           </div>
 
@@ -79,7 +92,7 @@ export default function AddLoanForm({ onSave, onCancel }) {
               required
             />
             <span className="text-xs text-brand-primary" style={{ marginLeft: '0.25rem', marginTop: '0.25rem', opacity: 0.9 }}>
-              সাধারণত মোট টাকার ১০% হয়ে থাকে। চাইলে বদলাতে পারেন।
+              আপনি চাইলে যেকোনো পরিমাণ বসাতে পারেন, যা আপনি লাভ হিসেবে নিবেন।
             </span>
           </div>
 

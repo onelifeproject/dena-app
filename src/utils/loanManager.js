@@ -72,9 +72,23 @@ export const calculateDaysLeft = (nextPaymentDateIso) => {
   return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 };
 
-export const getSummaryStats = (loans) => {
+export const getAvailableYears = (loans) => {
+   const years = new Set([new Date().getFullYear()]);
+   loans.forEach(loan => {
+      loan.payments.forEach(p => {
+         years.add(new Date(p.date).getFullYear());
+      });
+   });
+   return Array.from(years).sort((a,b) => b - a);
+};
+
+export const getSummaryStats = (loans, selectedYear, selectedMonth) => {
     let totalActivePrincipal = 0;
     let totalInterestCollected = 0;
+    let monthlyInterest = 0;
+
+    const currentSelYear = selectedYear !== undefined ? Number(selectedYear) : new Date().getFullYear();
+    const currentSelMonth = selectedMonth !== undefined ? Number(selectedMonth) : new Date().getMonth();
 
     loans.forEach(loan => {
         if (loan.status === 'ACTIVE') {
@@ -82,10 +96,16 @@ export const getSummaryStats = (loans) => {
         }
         loan.payments.forEach(payment => {
             if (payment.type === 'INTEREST') {
-                totalInterestCollected += Number(payment.amount);
+                const amount = Number(payment.amount);
+                totalInterestCollected += amount;
+                
+                const pDate = new Date(payment.date);
+                if (pDate.getFullYear() === currentSelYear && pDate.getMonth() === currentSelMonth) {
+                   monthlyInterest += amount;
+                }
             }
         });
     });
 
-    return { totalActivePrincipal, totalInterestCollected };
+    return { totalActivePrincipal, totalInterestCollected, monthlyInterest };
 }

@@ -15,31 +15,41 @@ export default function LoanCard({ loan, onPaymentClick, onSettleClick, onDelete
       return `${datePart} (${dayName})`;
   };
 
+  const lastPayment = loan.payments && loan.payments.length > 0 
+      ? loan.payments[loan.payments.length - 1] 
+      : null;
+
   return (
-    <div className="glass-card loan-card-container">
+    <div className={`glass-card loan-card-container ${isOverdue && loan.status === 'ACTIVE' ? 'overdue-alert' : ''}`}>
       
       {/* Left side info (Name and dates) */}
       <div className="loan-card-info">
-         <h3 className="font-bold text-pure text-lg truncate-text">
+         <h3 className="font-bold text-pure text-lg truncate-text mb-2">
             {loan.name}
          </h3>
          
-         <div className="mt-1 flex flex-col gap-1">
-             <p className="text-xs text-muted">
-                 নেওয়া হয়েছে: {formatBnDate(loan.startDate)}
+         <div className="flex flex-col gap-2">
+             <p className="text-sm text-muted">
+                 নেওয়া হয়েছে: <span style={{opacity: 0.9}}>{formatBnDate(loan.startDate)}</span>
              </p>
              
+             {lastPayment && (
+                 <p className="text-xs text-secondary opacity-70">
+                     শেষ লাভ জমা: {formatBnDate(lastPayment.date)}
+                 </p>
+             )}
+             
              {loan.status === 'ACTIVE' ? (
-                 <p className="text-xs text-primary mt-1">
-                     পরবর্তী কিস্তি: <span style={{ color: isOverdue ? 'var(--color-danger)' : 'var(--color-warning)' }}>
+                 <p className="text-sm text-primary mt-1">
+                     পরবর্তী কিস্তি: <span style={{ color: isOverdue ? 'var(--color-danger)' : 'var(--color-warning)', paddingRight: '4px' }}>
                          {formatBnDate(loan.nextPaymentDate)}
                      </span>
-                     <span className="font-bold ml-1 inline-block mt-1 sm-mt-0" style={{ color: isOverdue ? 'var(--color-danger)' : 'var(--color-success)' }}>
+                     <span className="font-bold inline-block sm-mt-0" style={{ color: isOverdue ? 'var(--color-danger)' : 'var(--color-success)' }}>
                          ({isOverdue ? `মেয়াদোত্তীর্ণ: ${toBn(Math.abs(daysLeft))} দিন` : `বাকি: ${toBn(daysLeft)} দিন`})
                      </span>
                  </p>
              ) : (
-                 <p className="text-xs text-muted mt-1">হিসাব সম্পূর্ণ পরিশোধিত</p>
+                 <p className="text-sm text-muted mt-1">হিসাব সম্পূর্ণ পরিশোধিত</p>
              )}
          </div>
       </div>

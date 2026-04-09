@@ -3,6 +3,7 @@ import Dashboard from './components/Dashboard';
 import AddLoanForm from './components/AddLoanForm';
 import PaymentModal from './components/PaymentModal';
 import DeleteModal from './components/DeleteModal';
+import LiveClock from './components/LiveClock';
 import { getLoans, addLoan, collectPayment, deleteLoan } from './utils/loanManager';
 
 export default function App() {
@@ -54,6 +55,8 @@ export default function App() {
         </a>
       </header>
 
+      <LiveClock />
+
       <main style={{ flex: 1 }}>
         <Dashboard 
           loans={loans} 
@@ -64,7 +67,7 @@ export default function App() {
         />
       </main>
 
-      <footer className="mt-8 pt-4 pb-2" style={{ borderTop: '1px solid var(--border-subtle)', textAlign: 'center' }}>
+      <footer className="w-full text-center" style={{ marginTop: 'auto', paddingTop: '2rem', paddingBottom: '1rem', borderTop: '1px solid var(--border-subtle)' }}>
         <p className="text-xs text-muted">© ২০২৬ হিসাব রক্ষক। সমস্ত অধিকার সংরক্ষিত।</p>
       </footer>
 
