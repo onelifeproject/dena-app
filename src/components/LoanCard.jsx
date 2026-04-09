@@ -1,0 +1,87 @@
+import { calculateDaysLeft } from '../utils/loanManager';
+
+export default function LoanCard({ loan, onPaymentClick, onSettleClick, onDeleteClick }) {
+  const daysLeft = calculateDaysLeft(loan.nextPaymentDate);
+  const isOverdue = daysLeft < 0;
+
+  const toBn = (num) => Number(num).toLocaleString('bn-BD');
+  
+  const banglaDays = ['রবিবার', 'সোমবার', 'মঙ্গলবার', 'বুধবার', 'বৃহস্পতিবার', 'শুক্রবার', 'শনিবার'];
+  
+  const formatBnDate = (isoString) => {
+      const d = new Date(isoString);
+      const datePart = d.toLocaleDateString('bn-BD');
+      const dayName = banglaDays[d.getDay()];
+      return `${datePart} (${dayName})`;
+  };
+
+  return (
+    <div className="glass-card loan-card-container">
+      
+      {/* Left side info (Name and dates) */}
+      <div className="loan-card-info">
+         <h3 className="font-bold text-pure text-lg truncate-text">
+            {loan.name}
+         </h3>
+         
+         <div className="mt-1 flex flex-col gap-1">
+             <p className="text-xs text-muted">
+                 নেওয়া হয়েছে: {formatBnDate(loan.startDate)}
+             </p>
+             
+             {loan.status === 'ACTIVE' ? (
+                 <p className="text-xs text-primary mt-1">
+                     পরবর্তী কিস্তি: <span style={{ color: isOverdue ? 'var(--color-danger)' : 'var(--color-warning)' }}>
+                         {formatBnDate(loan.nextPaymentDate)}
+                     </span>
+                     <span className="font-bold ml-1 inline-block mt-1 sm-mt-0" style={{ color: isOverdue ? 'var(--color-danger)' : 'var(--color-success)' }}>
+                         ({isOverdue ? `মেয়াদোত্তীর্ণ: ${toBn(Math.abs(daysLeft))} দিন` : `বাকি: ${toBn(daysLeft)} দিন`})
+                     </span>
+                 </p>
+             ) : (
+                 <p className="text-xs text-muted mt-1">হিসাব সম্পূর্ণ পরিশোধিত</p>
+             )}
+         </div>
+      </div>
+
+      {/* Middle amounts */}
+      <div className="loan-card-stats">
+         <p className="font-bold text-base text-pure amount-text">{loan.principal.toLocaleString('bn-BD')} ৳</p>
+         {loan.status === 'ACTIVE' && (
+             <p className="text-sm interest-text" style={{ color: 'var(--color-warning)' }}>
+                 +{loan.interestPerWeek.toLocaleString('bn-BD')} ৳
+             </p>
+         )}
+      </div>
+
+      {/* Right side actions (Stacking horizontally on mobile via flex) */}
+      <div className="loan-card-actions">
+        {loan.status === 'ACTIVE' ? (
+            <div className="action-btn-group">
+               <button 
+                  className="btn btn-primary compact-btn" 
+                  onClick={() => onPaymentClick(loan)}
+                >
+                  লাভ জমা
+               </button>
+               <button 
+                  className="btn btn-secondary compact-btn" 
+                  onClick={() => onSettleClick(loan)}
+                >
+                  পরিশোধ
+               </button>
+            </div>
+        ) : (
+            <span className="badge badge-done mb-1 sm-mb-0">বন্ধ</span>
+        )}
+        
+        <button 
+           className="btn btn-danger compact-btn delete-btn" 
+           onClick={onDeleteClick}
+        >
+          মুছে ফেলুন
+        </button>
+      </div>
+    </div>
+  );
+}
