@@ -1,0 +1,46 @@
+name: Automated Android APK Cloud Build
+
+on:
+  push:
+    branches: [ "master", "main" ]
+  workflow_dispatch:
+
+jobs:
+  build-android:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Code Repository
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js (Web Environment)
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+
+    - name: Setup Java JDK (Android Environment)
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'zulu'
+        java-version: '17'
+
+    - name: Automatically Install Dependencies
+      run: npm install
+
+    - name: Bundle Web Dashboard (dist)
+      run: npm run build
+
+    - name: Sync React Native Core to Android
+      run: npx cap sync android
+
+    - name: Execute Gradle APK Compilation
+      working-directory: ./android
+      run: |
+        chmod +x ./gradlew
+        ./gradlew assembleDebug
+
+    - name: Capture Output APK & Upload Download Link
+      uses: actions/upload-artifact@v4
+      with:
+        name: UsuryApp-Android
+        path: android/app/build/outputs/apk/debug/app-debug.apk
