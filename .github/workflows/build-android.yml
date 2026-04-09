@@ -16,7 +16,7 @@ jobs:
     - name: Setup Node.js (Web Environment)
       uses: actions/setup-node@v4
       with:
-        node-version: '20'
+        node-version: '22'
 
     - name: Setup Java JDK (Android Environment)
       uses: actions/setup-java@v4
