@@ -24,14 +24,14 @@ export default function Dashboard({ loans, onPaymentClick, onSettleClick, onDele
 
   return (
     <div className="w-full">
+      <div className="text-center mb-4">
+         <h2 className="section-title">হিসাবের সারাংশ</h2>
+      </div>
       <div className="glass-card mb-6">
-        <div className="flex justify-between items-center flex-wrap gap-4" style={{ padding: '1rem 1.25rem 0' }}>
-            <h2 className="text-sm text-secondary font-semibold" style={{ letterSpacing: '0.02em', margin: 0 }}>
-               হিসাবের সারাংশ
-            </h2>
+        <div className="summary-header flex justify-end items-center flex-wrap gap-4" style={{ padding: '0.75rem 1.25rem' }}>
             
             {/* Monthly Report Timeline Selector */}
-            <div className="flex gap-2">
+            <div className="flex gap-2 w-full-mobile justify-end">
                <select 
                   className="report-select" 
                   value={selectedMonth} 
@@ -89,14 +89,17 @@ export default function Dashboard({ loans, onPaymentClick, onSettleClick, onDele
          </button>
       </div>
 
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-bold">{activeTab === 'ACTIVE' ? 'সক্রিয় গ্রাহক' : 'সম্পূর্ণ হওয়া হিসাব'}</h2>
-        {activeTab === 'ACTIVE' && (
-            <button className="btn btn-primary btn-sm" onClick={onAddNewClick}>
-              + নতুন হিসাব
-            </button>
-        )}
+      <div className="text-center mb-4 mt-10">
+         <h2 className="section-title">{activeTab === 'ACTIVE' ? 'সক্রিয় গ্রাহক' : 'সম্পূর্ণ হওয়া হিসাব'}</h2>
       </div>
+      
+      {activeTab === 'ACTIVE' && (
+        <div className="flex justify-end mb-4 px-2">
+            <button onClick={onAddNewClick} className="btn btn-primary w-full-mobile shadow-glow">
+               <span className="mr-1">+</span> নতুন হিসাব
+            </button>
+        </div>
+      )}
 
       <div className="flex flex-col gap-4">
         {displayedLoans.length === 0 ? (

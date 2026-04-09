@@ -40,14 +40,28 @@ export default function LoanCard({ loan, onPaymentClick, onSettleClick, onDelete
              )}
              
              {loan.status === 'ACTIVE' ? (
-                 <p className="text-sm text-primary mt-1">
-                     পরবর্তী কিস্তি: <span style={{ color: isOverdue ? 'var(--color-danger)' : 'var(--color-warning)', paddingRight: '4px' }}>
-                         {formatBnDate(loan.nextPaymentDate)}
-                     </span>
-                     <span className="font-bold inline-block sm-mt-0" style={{ color: isOverdue ? 'var(--color-danger)' : 'var(--color-success)' }}>
-                         ({isOverdue ? `মেয়াদোত্তীর্ণ: ${toBn(Math.abs(daysLeft))} দিন` : `বাকি: ${toBn(daysLeft)} দিন`})
-                     </span>
-                 </p>
+                 <>
+                     <p className="text-sm text-primary mt-1 mb-2">
+                         পরবর্তী কিস্তি: <span className="font-bold" style={{ color: isOverdue ? 'var(--color-danger)' : 'var(--color-warning)' }}>
+                             {formatBnDate(loan.nextPaymentDate)}
+                         </span>
+                     </p>
+                     <p className="text-sm text-primary mb-4">
+                         {isOverdue ? (
+                            <>
+                               বাকি: <span className="font-bold" style={{ color: 'var(--color-danger)', textShadow: '0 0 8px rgba(239, 68, 68, 0.6)' }}>
+                                  <span style={{ fontSize: '1.25rem', margin: '0 0.15rem' }}>{toBn(Math.abs(daysLeft))}</span> দিন হয়ে গেছে টাকা দেয়নি!
+                               </span>
+                            </>
+                         ) : (
+                            <>
+                               বাকি: <span className="font-bold" style={{ color: 'var(--color-success)', textShadow: '0 0 8px rgba(16, 185, 129, 0.6)' }}>
+                                  টাকা দিবে আর <span style={{ fontSize: '1.25rem', margin: '0 0.15rem' }}>{toBn(daysLeft)}</span> দিন পর
+                               </span>
+                            </>
+                         )}
+                     </p>
+                 </>
              ) : (
                  <p className="text-sm text-muted mt-1">হিসাব সম্পূর্ণ পরিশোধিত</p>
              )}
@@ -64,10 +78,10 @@ export default function LoanCard({ loan, onPaymentClick, onSettleClick, onDelete
          )}
       </div>
 
-      {/* Right side actions (Stacking horizontally on mobile via flex) */}
+      {/* Right side actions (Strictly Equal Widths Globally) */}
       <div className="loan-card-actions">
         {loan.status === 'ACTIVE' ? (
-            <div className="action-btn-group">
+           <>
                <button 
                   className="btn btn-primary compact-btn" 
                   onClick={() => onPaymentClick(loan)}
@@ -80,13 +94,13 @@ export default function LoanCard({ loan, onPaymentClick, onSettleClick, onDelete
                 >
                   পরিশোধ
                </button>
-            </div>
+           </>
         ) : (
-            <span className="badge badge-done mb-1 sm-mb-0">বন্ধ</span>
+            <span className="badge badge-done flex-1 text-center" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>বন্ধ</span>
         )}
         
         <button 
-           className="btn btn-danger compact-btn delete-btn" 
+           className="btn btn-danger compact-btn" 
            onClick={onDeleteClick}
         >
           মুছে ফেলুন

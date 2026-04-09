@@ -27,13 +27,13 @@ export default function LiveClock() {
   }).format(currentTime);
 
   return (
-    <div className="text-center mb-6" style={{ marginTop: '-1rem' }}>
-      <p className="text-sm font-medium" style={{ color: 'var(--text-secondary)', background: 'rgba(255,255,255,0.03)', display: 'inline-block', padding: '0.4rem 1rem', borderRadius: 'var(--radius-pill)', border: '1px solid var(--border-subtle)' }}>
-         <span style={{ opacity: 0.8 }}>আজ: </span> 
-         <span className="text-gradient font-bold">{formatDate}</span> 
-         <span style={{ margin: '0 0.5rem', opacity: 0.5 }}>|</span> 
-         <span className="text-pure font-bold" style={{ fontVariantNumeric: 'tabular-nums' }}>{formatTime}</span>
-      </p>
+    <div className="text-center mb-6 px-2" style={{ marginTop: '-1rem' }}>
+      <div className="text-sm font-medium clock-wrapper" style={{ color: 'var(--text-secondary)', background: 'rgba(255,255,255,0.03)', display: 'inline-flex', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center', gap: '0.5rem', padding: '0.4rem 1rem', borderRadius: 'var(--radius-pill)', border: '1px solid var(--border-subtle)' }}>
+         <span style={{ opacity: 0.8, whiteSpace: 'nowrap' }}>আজ: </span> 
+         <span className="text-gradient font-bold" style={{ whiteSpace: 'nowrap' }}>{formatDate}</span> 
+         <span className="clock-divider" style={{ opacity: 0.5 }}>|</span> 
+         <span className="text-pure font-bold" style={{ fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>{formatTime}</span>
+      </div>
     </div>
   );
 }

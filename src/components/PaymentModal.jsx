@@ -48,10 +48,12 @@ export default function PaymentModal({ loan, isSettle, onConfirm, onCancel }) {
             )}
           </div>
 
-          <div className="flex gap-4">
-            <button type="button" className="btn btn-secondary w-full" onClick={onCancel}>বাতিল করুন</button>
-            <button type="submit" className={`btn ${isSettle ? 'btn-warning' : 'btn-primary'} w-full`} style={isSettle ? {background: 'var(--gradient-gold)', color: '#000'} : {}}>
-              জমা নিশ্চিত করুন
+          <div className="flex justify-between items-center mt-8 gap-4 mobile-btn-stack">
+            <button type="button" className="btn btn-secondary flex-1 text-lg" onClick={onCancel}>
+               বাতিল করুন
+            </button>
+            <button type="submit" className={`btn ${isSettle ? 'btn-warning' : 'btn-primary'} flex-1 text-lg shadow-glow`} style={isSettle ? {background: 'var(--gradient-gold)', color: '#000'} : {}}>
+               {isSettle ? 'হিসাব সম্পূর্ণ করুন' : 'জমা নিশ্চিত করুন'}
             </button>
           </div>
         </form>

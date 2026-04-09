@@ -7,15 +7,17 @@ export default function DeleteModal({ loan, onConfirm, onCancel }) {
             <h2 className="text-xl font-bold mb-2 text-pure text-center">
               হিসাব মুছে ফেলতে চান?
             </h2>
-            <p className="text-sm text-secondary">
-              আপনি কি নিশ্চিত যে <strong>{loan?.name}</strong> এর সম্পূর্ণ রেকর্ড মুছে ফেলতে চান? এই অ্যাকশনটি আর পরিবর্তন করা যাবে না!
+            <p className="text-secondary mb-4 text-center">
+              আপনি কি নিশ্চিত যে আপনি <span className="font-bold text-pure">{loan.name}</span> এর সব তথ্য মুছে ফেলতে চান? এটি আর ফিরিয়ে আনা যাবে না।
             </p>
         </div>
 
-        <div className="flex gap-4 mt-6">
-          <button type="button" className="btn btn-secondary w-full" onClick={onCancel}>বাতিল</button>
-          <button type="button" className="btn btn-danger w-full" onClick={() => onConfirm(loan.id)}>
-              হ্যাঁ, মুছে ফেলুন
+        <div className="flex gap-4 mt-8 mobile-btn-stack">
+          <button className="btn btn-secondary flex-1" onClick={onCancel}>
+             না, বাতিল করুন
+          </button>
+          <button className="btn flex-1" style={{ background: 'rgba(239, 68, 68, 0.15)', color: 'var(--color-danger)', border: '1px solid rgba(239, 68, 68, 0.3)' }} onClick={() => onConfirm(loan.id)}>
+             হ্যাঁ, মুছে ফেলুন
           </button>
         </div>
       </div>
