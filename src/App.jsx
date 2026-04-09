@@ -49,9 +49,12 @@ export default function App() {
   return (
     <div className="app-container" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       <header className="app-header">
-        <a href="/" style={{ textDecoration: 'none', display: 'inline-block' }}>
-          <h1 className="text-3xl font-bold text-brand-gradient" style={{ lineHeight: '1.2' }}>হিসাব রক্ষক</h1>
-          <p className="text-base font-medium mt-1" style={{ color: 'var(--text-secondary)' }}>লোন এবং সুদের হিসাব</p>
+        <a href="/" className="logo-link" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <img src="/favicon.png" alt="App Logo" className="app-main-logo" style={{ width: '2.8rem', height: '2.8rem', marginRight: '1rem', borderRadius: '0.5rem', boxShadow: '0 0 20px rgba(139, 92, 246, 0.4)' }} />
+          <div>
+            <h1 className="text-3xl font-bold text-brand-gradient" style={{ lineHeight: '1.2', margin: 0, padding: 0 }}>হিসাব রক্ষক</h1>
+            <p className="text-base font-medium mt-1" style={{ color: 'var(--text-secondary)', margin: 0, padding: 0 }}>লোন এবং সুদের হিসাব</p>
+          </div>
         </a>
       </header>
 
