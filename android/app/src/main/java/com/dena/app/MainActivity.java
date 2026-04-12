@@ -1,4 +1,4 @@
-package com.usury.app;
+package com.dena.app;
 
 import com.getcapacitor.BridgeActivity;
 
