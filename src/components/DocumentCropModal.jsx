@@ -10,19 +10,28 @@ const getCroppedBlob = async (imageElement, cropPixels) => {
     throw new Error('ছবি ক্রপ করা যায়নি।');
   }
 
-  canvas.width = cropPixels.width;
-  canvas.height = cropPixels.height;
+  const scaleX = imageElement.naturalWidth / imageElement.width;
+  const scaleY = imageElement.naturalHeight / imageElement.height;
+  const sourceX = Math.round(cropPixels.x * scaleX);
+  const sourceY = Math.round(cropPixels.y * scaleY);
+  const sourceWidth = Math.round(cropPixels.width * scaleX);
+  const sourceHeight = Math.round(cropPixels.height * scaleY);
+
+  canvas.width = sourceWidth;
+  canvas.height = sourceHeight;
+  context.imageSmoothingEnabled = true;
+  context.imageSmoothingQuality = 'high';
 
   context.drawImage(
     imageElement,
-    cropPixels.x,
-    cropPixels.y,
-    cropPixels.width,
-    cropPixels.height,
+    sourceX,
+    sourceY,
+    sourceWidth,
+    sourceHeight,
     0,
     0,
-    cropPixels.width,
-    cropPixels.height
+    sourceWidth,
+    sourceHeight
   );
 
   const blob = await new Promise((resolve) =>

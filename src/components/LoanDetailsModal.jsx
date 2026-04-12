@@ -1,3 +1,7 @@
+import { Capacitor } from '@capacitor/core';
+import { Directory, Filesystem } from '@capacitor/filesystem';
+import { Share } from '@capacitor/share';
+
 const banglaDays = ['রবিবার', 'সোমবার', 'মঙ্গলবার', 'বুধবার', 'বৃহস্পতিবার', 'শুক্রবার', 'শনিবার'];
 
 const formatBnDate = (isoString) => {
@@ -33,10 +37,31 @@ export default function LoanDetailsModal({ loan, onClose }) {
     context.drawImage(image, 0, 0);
 
     const jpgDataUrl = canvas.toDataURL('image/jpeg', 0.92);
+    const base64Data = jpgDataUrl.split(',')[1];
+
+    if (Capacitor.isNativePlatform()) {
+      const filePath = `proof-${Date.now()}-${fileName}`;
+      const { uri } = await Filesystem.writeFile({
+        path: filePath,
+        data: base64Data,
+        directory: Directory.Cache,
+      });
+
+      await Share.share({
+        title: 'ডকুমেন্ট প্রুফ',
+        text: 'প্রুফ ছবি সেভ/শেয়ার করুন',
+        url: uri,
+        dialogTitle: 'ছবি ডাউনলোড করুন',
+      });
+      return;
+    }
+
     const link = document.createElement('a');
     link.href = jpgDataUrl;
     link.download = fileName;
+    document.body.appendChild(link);
     link.click();
+    document.body.removeChild(link);
   };
 
   return (
