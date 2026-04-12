@@ -35,7 +35,7 @@ export default function App() {
       await StatusBar.show();
       await StatusBar.setOverlaysWebView({ overlay: false });
       await StatusBar.setBackgroundColor({ color: '#07070a' });
-      await StatusBar.setStyle({ style: Style.Light });
+      await StatusBar.setStyle({ style: Style.Dark });
     };
 
     setupSystemBars();
