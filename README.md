@@ -1,16 +1,62 @@
-# React + Vite
+# Dena (`usury-app`)
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Loan and weekly-interest tracking app (Bengali UI), built with React + Vite and packaged for Android via Capacitor.
 
-Currently, two official plugins are available:
+## Run Locally
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+```bash
+npm install
+npm run dev
+```
 
-## React Compiler
+## Android Build (Local)
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+```bash
+npm run build
+npx cap sync android
+cd android
+./gradlew clean assembleRelease
+```
 
-## Expanding the ESLint configuration
+Release APK output:
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+- `android/app/build/outputs/apk/release/app-release.apk`
+
+## Where To Change Version (Important)
+
+Change Android version here:
+
+- `android/app/build.gradle`
+
+Update these fields in `defaultConfig`:
+
+- `versionCode` (must increase every release: 1, 2, 3...)
+- `versionName` (human-readable: 1.0, 1.1, 1.2...)
+
+Example:
+
+```gradle
+defaultConfig {
+    versionCode 5
+    versionName "1.4"
+}
+```
+
+## Release Checklist (Remember This)
+
+1. Bump `versionCode` and `versionName` in `android/app/build.gradle`.
+2. Keep `applicationId` unchanged (`com.dena.app`).
+3. Ensure signing files exist:
+   - `android/keystore/signing.properties`
+   - `android/keystore/dena-release.keystore`
+4. Run:
+   - `npm run lint`
+   - `npm run build`
+   - `npx cap sync android`
+5. Push to GitHub and verify workflow artifact name matches version.
+
+## Notification Notes
+
+- Android small status icon uses monochrome asset (`ic_stat_dena_mono`).
+- Notification large icon uses branded asset (`ic_notification_large`).
+- Messages and scheduling logic live in `src/services/notificationService.js`.
