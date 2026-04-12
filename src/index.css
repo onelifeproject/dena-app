@@ -76,16 +76,33 @@ h1, h2, h3, h4 {
 
 /* Very Sleek, Clean, Professional Header */
 .app-header {
-  background: rgba(7, 7, 10, 0.9);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  background: #07070a;
   padding: calc(0.5rem + env(safe-area-inset-top, 0px)) 0 0.5rem;
   margin-bottom: 2rem;
   text-align: center;
   border-bottom: 1px solid var(--border-subtle);
   position: sticky;
   top: 0;
-  z-index: 20;
+  z-index: 100;
+}
+
+.logo-link {
+  -webkit-tap-highlight-color: transparent;
+  transition: transform var(--transition-fast), filter var(--transition-fast);
+}
+
+.logo-link:focus,
+.logo-link:focus-visible,
+.logo-link:hover,
+.logo-link:active {
+  background: transparent !important;
+  outline: none;
+  box-shadow: none;
+}
+
+.logo-link:active {
+  transform: scale(0.985);
+  filter: brightness(1.05);
 }
 
 /* Tabs */

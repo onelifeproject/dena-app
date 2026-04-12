@@ -45,7 +45,9 @@ jobs:
     - name: Validate Signing Files
       run: |
         [ -f "android/keystore/signing.properties" ] || (echo "Missing android/keystore/signing.properties in repo" && exit 1)
-        [ -f "android/keystore/dena-release.keystore" ] || (echo "Missing android/keystore/dena-release.keystore in repo" && exit 1)
+        STORE_FILE=$(awk -F'=' '/^storeFile=/ {print $2; exit}' android/keystore/signing.properties | tr -d '\r')
+        [ -n "$STORE_FILE" ] || (echo "Missing storeFile in android/keystore/signing.properties" && exit 1)
+        [ -f "android/${STORE_FILE}" ] || (echo "Missing keystore file at android/${STORE_FILE}" && exit 1)
 
     - name: Build Signed Release APK
       working-directory: ./android
