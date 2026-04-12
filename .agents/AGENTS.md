@@ -17,8 +17,9 @@ There is no backend API. All business data is stored in browser/app `localStorag
 - Frontend: React 19, Vite 8
 - Native shell: Capacitor 8 (`@capacitor/core`, `@capacitor/android`)
 - Date input: `react-datepicker`
+- Image handling: `react-image-crop`, `react-easy-crop`
 - Linting: ESLint flat config
-- CI: GitHub Actions builds Android debug APK
+- CI: GitHub Actions builds signed Android release APK
 
 ## Canonical Runtime Flow
 
@@ -26,8 +27,13 @@ There is no backend API. All business data is stored in browser/app `localStorag
 2. `src/main.jsx` renders `<App />`.
 3. `src/App.jsx` loads saved loans from `getLoans()`.
 4. User actions (add/payment/delete) call functions in `src/utils/loanManager.js`.
-5. `loanManager.js` mutates loan array and persists to `localStorage` key `usuryLoans`.
-6. UI re-renders from state updates in `App.jsx`.
+5. Optional proof image flow in add form:
+   - pick from camera/gallery
+   - optional crop (`DocumentCropModal`)
+   - compression (`src/utils/imageCompression.js`)
+   - store compressed image metadata in loan record
+6. `loanManager.js` mutates loan array and persists to `localStorage` key `usuryLoans`.
+7. UI re-renders from state updates in `App.jsx`.
 
 ## Repository Map
 
@@ -35,9 +41,11 @@ There is no backend API. All business data is stored in browser/app `localStorag
   - `main.jsx`: React entry
   - `App.jsx`: global state and modal orchestration
   - `components/`: UI modules (`Dashboard`, `LoanCard`, modals, `LiveClock`)
+    - `LoanDetailsModal.jsx`: full loan details + proof image + JPG download
+    - `DocumentCropModal.jsx`: free crop / skip-crop flow for proof image
   - `utils/loanManager.js`: core business and persistence logic (most critical file)
+  - `utils/imageCompression.js`: client-side proof image resizing/compression
   - `index.css`: full app styling
-  - `App.css`: legacy template CSS (currently unused)
 - `public/`: static assets (`icons.svg`)
 - `android/`: Capacitor Android project (Gradle, resources, `MainActivity`)
 - `.github/workflows/build-android.yml`: Android CI build
@@ -51,6 +59,12 @@ Loan object (stored in `usuryLoans` array):
 - `startDate`: string (`YYYY-MM-DD`)
 - `principal`: number
 - `interestPerWeek`: number
+- `proofImage`: optional object
+  - `dataUrl`: compressed image payload
+  - `mimeType`: stored image MIME type (currently `image/webp`)
+  - `width`: compressed width
+  - `height`: compressed height
+  - `originalName`: original picked filename
 - `status`: `"ACTIVE"` or `"DONE"`
 - `nextPaymentDate`: ISO datetime string
 - `payments`: array of payment entries
@@ -85,6 +99,9 @@ Payment entry:
 - Bengali locale display (`bn-BD`) across date/number formatting.
 - `LiveClock` uses `Asia/Dhaka` timezone.
 - `AddLoanForm` also normalizes selected date to Dhaka timezone before save.
+- Loan cards are tappable and open `LoanDetailsModal`.
+- Proof image upload is optional and never blocks loan creation.
+- Proof download from details modal is exported as JPG (client-side conversion).
 
 ## Commands
 
@@ -92,31 +109,29 @@ Payment entry:
 - `npm run build`: production build to `dist`
 - `npm run preview`: preview build
 - `npm run lint`: ESLint
+- `npm run android:release`: build + sync + signed release APK (local)
 
-Android packaging flow:
+Android packaging flow (local):
 
-1. `npm run build`
-2. `npx cap sync android`
-3. Build in `android/` with Gradle (`assembleDebug`)
+1. Ensure signing files exist in `android/keystore/`
+2. Run `npm run android:release`
+3. Output: `android/app/build/outputs/apk/release/app-release.apk`
 
 ## CI Behavior
 
-Workflow: `.github/workflows/build-android.yml`
+Workflow: `.github/workflows/build-android.yml` (`Android Signed Release Build`)
 
 - Triggers on push to `main` and `master` (plus manual dispatch)
 - Uses Node 22 + Java 21
-- Builds web bundle, syncs Capacitor, builds APK
-- Renames output to `Dena.apk`
-- Uploads artifact `Dena-Android`
+- Builds web bundle, syncs Capacitor, validates signing files, builds `assembleRelease`
+- APK filename format: `Dena-v<versionName>.apk`
+- Artifact name format: `Dena-Android-v<versionName>-<versionCode>`
 
 ## Known Inconsistencies to Keep in Mind
 
-- Capacitor `appId` is `com.dena.app`, but Android package/application ID is `com.usury.app`.
+- App/package ID is now aligned to `com.dena.app` in Android + Capacitor.
 - App naming differs between layers (`Dena` vs Bengali title in UI).
-- `index.html` and `App.jsx` reference `/favicon.png`, but favicon file is not present.
-- `README.md` is still generic Vite template text.
 - Android test package names (`com.getcapacitor.myapp`) do not match app package.
-- `src/App.css` is unused.
 
 ## Guardrails for Future Agents
 
@@ -133,9 +148,12 @@ Workflow: `.github/workflows/build-android.yml`
 2. `src/App.jsx`
 3. `src/components/Dashboard.jsx`
 4. `src/components/LoanCard.jsx`
-5. `src/components/AddLoanForm.jsx`
-6. `.github/workflows/build-android.yml`
-7. `android/app/build.gradle`
+5. `src/components/LoanDetailsModal.jsx`
+6. `src/components/AddLoanForm.jsx`
+7. `src/components/DocumentCropModal.jsx`
+8. `src/utils/imageCompression.js`
+9. `.github/workflows/build-android.yml`
+10. `android/app/build.gradle`
 
 ## Where to Find Detailed Design Notes
 

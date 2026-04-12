@@ -17,7 +17,7 @@ No server, API, or database is currently part of the architecture.
 
 - Browser loads `index.html`, then `src/main.jsx`.
 - `main.jsx` mounts `<App />` in React StrictMode.
-- On mount, `App.jsx` runs `setLoans(getLoans())`.
+- `App.jsx` initializes `loans` from `getLoans()` in state initializer.
 - `getLoans()` reads and parses `localStorage.getItem("usuryLoans")`.
 
 Important: `getLoans()` assumes valid JSON and has no parse fallback, so malformed storage can throw.
@@ -30,6 +30,7 @@ Important: `getLoans()` assumes valid JSON and has no parse fallback, so malform
 - `isAddingLoan`: controls add modal visibility
 - `activePaymentModal`: `{ show, loan, isSettle }`
 - `activeDeleteModal`: `{ show, loan }`
+- `activeLoanDetailsId`: selected loan for full details modal
 
 `Dashboard.jsx` owns display-only controls:
 
@@ -55,11 +56,12 @@ Pattern used:
 
 ### Loan create logic
 
-- Input: `{ name, startDate, principal, interestPerWeek }`
+- Input: `{ name, startDate, principal, interestPerWeek, proofImage? }`
 - Computes `nextPaymentDate` as start + 7 days
 - Creates loan:
   - `status: "ACTIVE"`
   - `payments: []`
+- If provided, stores `proofImage` object with compressed image metadata.
 - Saves and returns fresh full list.
 
 ### Payment logic
@@ -97,14 +99,24 @@ Pattern used:
   - Renders each loan
   - Overdue highlighting and Bengali date/day text
   - Actions: interest payment, settlement, delete
+  - Card tap opens full details modal
+- `LoanDetailsModal.jsx`
+  - Shows full loan details and payment history
+  - Shows optional proof image
+  - Supports proof download as JPG
 - `AddLoanForm.jsx`
   - Captures new loan fields
   - Auto-suggests weekly interest = `Math.floor(principal * 0.1)`
   - Converts chosen date into Dhaka timezone date string (`YYYY-MM-DD`) before save
+  - Supports optional proof image from camera/gallery
+  - Opens `DocumentCropModal` before final save
 - `PaymentModal.jsx`
   - Supports partial mode (weekly interest) and full-settlement mode
 - `DeleteModal.jsx`
   - Dangerous action confirmation
+- `DocumentCropModal.jsx`
+  - Free-form corner-resize crop UI
+  - Allows "use without crop" option
 - `LiveClock.jsx`
   - 1-second ticking Bengali date/time for `Asia/Dhaka`
 
@@ -130,16 +142,15 @@ Potential effect:
   - modal styles
   - responsive behavior
   - `react-datepicker` overrides
-
-`src/App.css` is template residue and not imported by the app.
+  - crop modal / proof image styles
 
 ## 8) Android Wrapper and Build Chain
 
 Important files:
 
 - `capacitor.config.json` (`webDir: dist`, `appId: com.dena.app`)
-- `android/app/build.gradle` (`applicationId: com.usury.app`)
-- `android/app/src/main/java/com/usury/app/MainActivity.java`
+- `android/app/build.gradle` (`applicationId: com.dena.app`)
+- `android/app/src/main/java/com/dena/app/MainActivity.java`
 - `android/app/src/main/AndroidManifest.xml`
 
 Build logic:
@@ -150,12 +161,14 @@ Build logic:
 
 CI automation:
 
-- `.github/workflows/build-android.yml` performs the exact flow and uploads `Dena.apk`.
+- `.github/workflows/build-android.yml` builds signed release APK and uploads artifact `Dena-Android-v<versionName>-<versionCode>`.
 
 ## 9) External Dependencies and Integrations
 
 - Google Fonts from `fonts.googleapis.com` and `fonts.gstatic.com`
 - Capacitor native runtime
+- `react-image-crop` for document-proof cropping UX
+- `react-easy-crop` (installed dependency for image handling stack)
 - No remote API integrations in current code
 - Optional Google Services plugin in Gradle if `google-services.json` exists
 
@@ -169,9 +182,8 @@ CI automation:
 ## 11) Current Risks / Technical Debt
 
 - Inconsistent identifiers:
-  - `com.dena.app` (Capacitor) vs `com.usury.app` (Android)
-- Missing `/favicon.png` referenced by web UI
-- Generic `README.md` does not document this app
+  - Android test package uses `com.getcapacitor.myapp` while app ID is `com.dena.app`
+- `README.md` may lag behind newer feature updates unless maintained each release
 - `getLoans()` has no safe recovery for corrupted localStorage
 - Random ID generation without collision guard
 - Schema versioning/migrations not implemented

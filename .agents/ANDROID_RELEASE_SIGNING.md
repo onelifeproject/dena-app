@@ -2,6 +2,16 @@
 
 Use this once to make all future APK/AAB updates install over previous versions without package conflict.
 
+## Current app capability snapshot
+
+The Android build currently includes:
+
+- Loan add/edit flow with optional document proof image
+- Camera or gallery image pick for document proof
+- Free-form crop UI (or skip crop) before save
+- Client-side image compression before persistence
+- Loan details modal with JPG download of proof image
+
 ## Why this matters
 
 Android accepts app updates only when both are true:
