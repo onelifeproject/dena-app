@@ -3,7 +3,8 @@ import { LocalNotifications } from '@capacitor/local-notifications';
 
 const TIMEZONE = 'Asia/Dhaka';
 const CHANNEL_ID = 'loan-reminders';
-const SMALL_ICON = 'ic_stat_dena';
+const SMALL_ICON = 'ic_stat_dena_mono';
+const LARGE_ICON = 'ic_notification_large';
 const ID_NAMESPACE_MIN = 710000000;
 const ID_NAMESPACE_MAX = 719999999;
 const DEBUG_NAMESPACE_MIN = 720000000;
@@ -74,6 +75,7 @@ const buildLoanNotifications = (loan) => {
       schedule: { at: dayBeforeAt4, allowWhileIdle: true },
       channelId: CHANNEL_ID,
       smallIcon: SMALL_ICON,
+      largeIcon: LARGE_ICON,
     });
   }
 
@@ -85,6 +87,7 @@ const buildLoanNotifications = (loan) => {
       schedule: { at: dueAt4, allowWhileIdle: true },
       channelId: CHANNEL_ID,
       smallIcon: SMALL_ICON,
+      largeIcon: LARGE_ICON,
     });
   }
 
@@ -96,6 +99,7 @@ const buildLoanNotifications = (loan) => {
       schedule: { at: getNextDhakaFourPm(), every: 'day', allowWhileIdle: true },
       channelId: CHANNEL_ID,
       smallIcon: SMALL_ICON,
+      largeIcon: LARGE_ICON,
     });
   }
 
@@ -185,6 +189,7 @@ export const scheduleDebugTestNotification = async (secondsFromNow = 30) => {
         schedule: { at, allowWhileIdle: true },
         channelId: CHANNEL_ID,
         smallIcon: SMALL_ICON,
+        largeIcon: LARGE_ICON,
       },
     ],
   });
@@ -222,6 +227,7 @@ export const scheduleRealMessagePreviewNotifications = async (loan) => {
       schedule: { at: new Date(now + 10000), allowWhileIdle: true },
       channelId: CHANNEL_ID,
       smallIcon: SMALL_ICON,
+      largeIcon: LARGE_ICON,
     },
     {
       id: DEBUG_NAMESPACE_MIN + ((now + 20000) % 100000),
@@ -230,6 +236,7 @@ export const scheduleRealMessagePreviewNotifications = async (loan) => {
       schedule: { at: new Date(now + 20000), allowWhileIdle: true },
       channelId: CHANNEL_ID,
       smallIcon: SMALL_ICON,
+      largeIcon: LARGE_ICON,
     },
     {
       id: DEBUG_NAMESPACE_MIN + ((now + 30000) % 100000),
@@ -238,6 +245,7 @@ export const scheduleRealMessagePreviewNotifications = async (loan) => {
       schedule: { at: new Date(now + 30000), allowWhileIdle: true },
       channelId: CHANNEL_ID,
       smallIcon: SMALL_ICON,
+      largeIcon: LARGE_ICON,
     },
   ];
 
