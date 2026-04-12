@@ -32,7 +32,7 @@ android {
     signingConfigs {
         release {
             if (releaseKeystoreFile && releaseKeystorePassword && releaseKeyAlias && releaseKeyPassword) {
-                storeFile file(releaseKeystoreFile)
+                storeFile rootProject.file(releaseKeystoreFile)
                 storePassword releaseKeystorePassword
                 keyAlias releaseKeyAlias
                 keyPassword releaseKeyPassword
