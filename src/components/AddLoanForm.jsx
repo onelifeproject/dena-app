@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 
@@ -11,11 +11,14 @@ export default function AddLoanForm({ onSave, onCancel }) {
   const [principal, setPrincipal] = useState('');
   const [interestPerWeek, setInterestPerWeek] = useState('');
 
-  useEffect(() => {
-    if (principal && !isNaN(principal)) {
-      setInterestPerWeek(Math.floor(Number(principal) * 0.1).toString());
+  const handlePrincipalChange = (value) => {
+    setPrincipal(value);
+    if (value && !isNaN(value)) {
+      setInterestPerWeek(Math.floor(Number(value) * 0.1).toString());
+    } else if (!value) {
+      setInterestPerWeek('');
     }
-  }, [principal]);
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -76,7 +79,7 @@ export default function AddLoanForm({ onSave, onCancel }) {
               className="form-input" 
               placeholder="যেমন: ২০০০০"
               value={principal}
-              onChange={e => setPrincipal(e.target.value)}
+              onChange={e => handlePrincipalChange(e.target.value)}
               required
             />
           </div>

@@ -4,17 +4,60 @@ import AddLoanForm from './components/AddLoanForm';
 import PaymentModal from './components/PaymentModal';
 import DeleteModal from './components/DeleteModal';
 import LiveClock from './components/LiveClock';
+import NotificationDebugPanel from './components/NotificationDebugPanel';
 import { getLoans, addLoan, collectPayment, deleteLoan } from './utils/loanManager';
+import {
+  requestNotificationAccess,
+  initializeNotificationChannel,
+  syncLoanNotifications,
+  getLoanPendingNotifications,
+  scheduleDebugTestNotification,
+  clearLoanNotifications,
+  clearDebugNotifications,
+} from './services/notificationService';
 
 export default function App() {
-  const [loans, setLoans] = useState([]);
+  const [loans, setLoans] = useState(() => getLoans());
   const [isAddingLoan, setIsAddingLoan] = useState(false);
   const [activePaymentModal, setActivePaymentModal] = useState({ show: false, loan: null, isSettle: false });
   const [activeDeleteModal, setActiveDeleteModal] = useState({ show: false, loan: null });
+  const [notificationsEnabled, setNotificationsEnabled] = useState(false);
+  const [showNotificationDebug, setShowNotificationDebug] = useState(false);
+  const [logoTapCount, setLogoTapCount] = useState(0);
 
   useEffect(() => {
-    setLoans(getLoans());
+    const setupNotifications = async () => {
+      const allowed = await requestNotificationAccess();
+      if (!allowed) return;
+
+      await initializeNotificationChannel();
+      setNotificationsEnabled(true);
+    };
+
+    setupNotifications();
   }, []);
+
+  useEffect(() => {
+    if (!notificationsEnabled) return;
+    syncLoanNotifications(loans);
+  }, [loans, notificationsEnabled]);
+
+  useEffect(() => {
+    if (logoTapCount === 0) return;
+    const timer = setTimeout(() => setLogoTapCount(0), 3000);
+    return () => clearTimeout(timer);
+  }, [logoTapCount]);
+
+  const handleLogoTap = () => {
+    setLogoTapCount((count) => {
+      const next = count + 1;
+      if (next >= 7) {
+        setShowNotificationDebug((prev) => !prev);
+        return 0;
+      }
+      return next;
+    });
+  };
 
   const handleAddLoanSave = (loanData) => {
     const updatedLoans = addLoan(loanData);
@@ -46,10 +89,37 @@ export default function App() {
     setActiveDeleteModal({ show: false, loan: null });
   };
 
+  const handleDebugPermissionCheck = async () => {
+    const allowed = await requestNotificationAccess();
+    if (allowed) {
+      await initializeNotificationChannel();
+      setNotificationsEnabled(true);
+    }
+    return allowed;
+  };
+
+  const handleDebugResync = async () => {
+    await syncLoanNotifications(loans);
+  };
+
+  const handleDebugGetPending = async () => getLoanPendingNotifications();
+
+  const handleDebugTest = async () => scheduleDebugTestNotification(30);
+
+  const handleDebugClearAll = async () => {
+    await clearLoanNotifications();
+    await clearDebugNotifications();
+  };
+
   return (
     <div className="app-container" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       <header className="app-header">
-        <a href="/" className="logo-link" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <a
+          href="/"
+          className="logo-link"
+          style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+          onClick={handleLogoTap}
+        >
           <img src="/favicon.png" alt="App Logo" className="app-main-logo" style={{ width: '2.8rem', height: '2.8rem', marginRight: '1rem', borderRadius: '0.5rem', boxShadow: '0 0 20px rgba(139, 92, 246, 0.4)' }} />
           <div>
             <h1 className="text-3xl font-bold text-brand-gradient" style={{ lineHeight: '1.2', margin: 0, padding: 0 }}>হিসাব রক্ষক</h1>
@@ -68,6 +138,17 @@ export default function App() {
           onDeleteClick={handleDeleteRequest}
           onAddNewClick={() => setIsAddingLoan(true)}
         />
+
+        {showNotificationDebug && (
+          <NotificationDebugPanel
+            loans={loans}
+            onRequestPermission={handleDebugPermissionCheck}
+            onResync={handleDebugResync}
+            onGetPending={handleDebugGetPending}
+            onSendTest={handleDebugTest}
+            onClearAll={handleDebugClearAll}
+          />
+        )}
       </main>
 
       <footer className="w-full text-center" style={{ marginTop: 'auto', paddingTop: '2rem', paddingBottom: '1rem', borderTop: '1px solid var(--border-subtle)' }}>
