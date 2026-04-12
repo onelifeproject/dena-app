@@ -1,4 +1,4 @@
-name: Android Debug Cloud Build
+name: Android Signed Release Build
 
 on:
   push:
@@ -37,20 +37,25 @@ jobs:
       run: |
         VERSION_CODE=$(awk '/versionCode/ {print $2; exit}' android/app/build.gradle)
         VERSION_NAME=$(awk -F'"' '/versionName/ {print $2; exit}' android/app/build.gradle)
-        APK_FILE_NAME="Dena-v${VERSION_NAME}(${VERSION_CODE})-debug.apk"
+        APK_FILE_NAME="Dena-v${VERSION_NAME}.apk"
         echo "VERSION_CODE=$VERSION_CODE" >> "$GITHUB_ENV"
         echo "VERSION_NAME=$VERSION_NAME" >> "$GITHUB_ENV"
         echo "APK_FILE_NAME=$APK_FILE_NAME" >> "$GITHUB_ENV"
 
-    - name: Build Debug APK
+    - name: Validate Signing Files
+      run: |
+        [ -f "android/keystore/signing.properties" ] || (echo "Missing android/keystore/signing.properties in repo" && exit 1)
+        [ -f "android/keystore/dena-release.keystore" ] || (echo "Missing android/keystore/dena-release.keystore in repo" && exit 1)
+
+    - name: Build Signed Release APK
       working-directory: ./android
       run: |
         chmod +x ./gradlew
-        ./gradlew clean assembleDebug
-        mv ./app/build/outputs/apk/debug/app-debug.apk "./app/build/outputs/apk/debug/${APK_FILE_NAME}"
+        ./gradlew clean assembleRelease
+        mv ./app/build/outputs/apk/release/app-release.apk "./app/build/outputs/apk/release/${APK_FILE_NAME}"
 
-    - name: Upload Debug APK Artifact
+    - name: Upload Signed APK Artifact
       uses: actions/upload-artifact@v4
       with:
-        name: Dena-Android-Debug-v${{ env.VERSION_NAME }}-${{ env.VERSION_CODE }}
-        path: android/app/build/outputs/apk/debug/${{ env.APK_FILE_NAME }}
+        name: Dena-Android-v${{ env.VERSION_NAME }}-${{ env.VERSION_CODE }}
+        path: android/app/build/outputs/apk/release/${{ env.APK_FILE_NAME }}

@@ -69,7 +69,7 @@ const buildLoanNotifications = (loan) => {
   if (!isPast(dayBeforeAt4)) {
     result.push({
       id: makeNotificationId(loan.id, 'day-before'),
-      title: 'আগামীকাল কিস্তির দিন',
+      title: 'আগামীকাল কিস্তি',
       body: `${loan.name} এর কিস্তি আগামীকাল। প্রাপ্য লাভ: ${Number(loan.interestPerWeek).toLocaleString('bn-BD')} টাকা।`,
       schedule: { at: dayBeforeAt4, allowWhileIdle: true },
       channelId: CHANNEL_ID,
@@ -80,7 +80,7 @@ const buildLoanNotifications = (loan) => {
   if (!isPast(dueAt4)) {
     result.push({
       id: makeNotificationId(loan.id, 'due-day'),
-      title: 'আজ কিস্তি নেওয়ার দিন',
+      title: 'আজ কিস্তি',
       body: `${loan.name} আজ কিস্তি দেওয়ার কথা। প্রাপ্য লাভ: ${Number(loan.interestPerWeek).toLocaleString('bn-BD')} টাকা।`,
       schedule: { at: dueAt4, allowWhileIdle: true },
       channelId: CHANNEL_ID,
@@ -91,7 +91,7 @@ const buildLoanNotifications = (loan) => {
   if (isOverdue) {
     result.push({
       id: makeNotificationId(loan.id, 'overdue-daily'),
-      title: 'বকেয়া কিস্তি মনে করিয়ে দিচ্ছি',
+      title: 'বকেয়া কিস্তি',
       body: `${loan.name} এর কিস্তি এখনো বাকি। আজ বিকাল ৪টার মধ্যে হিসাব আপডেট করুন।`,
       schedule: { at: getNextDhakaFourPm(), every: 'day', allowWhileIdle: true },
       channelId: CHANNEL_ID,
@@ -217,7 +217,7 @@ export const scheduleRealMessagePreviewNotifications = async (loan) => {
   const notifications = [
     {
       id: DEBUG_NAMESPACE_MIN + ((now + 10000) % 100000),
-      title: 'আগামীকাল কিস্তির দিন',
+      title: 'আগামীকাল কিস্তি',
       body: `${customerName} এর কিস্তি আগামীকাল। প্রাপ্য লাভ: ${weeklyInterest} টাকা।`,
       schedule: { at: new Date(now + 10000), allowWhileIdle: true },
       channelId: CHANNEL_ID,
@@ -225,7 +225,7 @@ export const scheduleRealMessagePreviewNotifications = async (loan) => {
     },
     {
       id: DEBUG_NAMESPACE_MIN + ((now + 20000) % 100000),
-      title: 'আজ কিস্তি নেওয়ার দিন',
+      title: 'আজ কিস্তি',
       body: `${customerName} আজ কিস্তি দেওয়ার কথা। প্রাপ্য লাভ: ${weeklyInterest} টাকা।`,
       schedule: { at: new Date(now + 20000), allowWhileIdle: true },
       channelId: CHANNEL_ID,
@@ -233,7 +233,7 @@ export const scheduleRealMessagePreviewNotifications = async (loan) => {
     },
     {
       id: DEBUG_NAMESPACE_MIN + ((now + 30000) % 100000),
-      title: 'বকেয়া কিস্তি মনে করিয়ে দিচ্ছি',
+      title: 'বকেয়া কিস্তি',
       body: `আজকের হিসাবে ${Number(overdueCount).toLocaleString('bn-BD')} জনের কিস্তি বকেয়া আছে। অ্যাপ খুলে হিসাব আপডেট করুন।`,
       schedule: { at: new Date(now + 30000), allowWhileIdle: true },
       channelId: CHANNEL_ID,

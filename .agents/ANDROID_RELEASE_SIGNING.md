@@ -11,17 +11,15 @@ Android accepts app updates only when both are true:
 
 If signing key changes, Android shows package conflict / app not installed.
 
-## No GitHub secrets required (local signing)
+## No GitHub secrets required (repo signing)
 
-This repo now supports local file-based signing for private use.
+This repo is configured to sign release builds in GitHub Actions using files committed in the repository (private repo use case).
 
-Create this file on your machine (do not commit it):
-
-- `android/keystore/signing.properties`
-
-Template exists:
+Required files in repo:
 
 - `android/keystore/signing.properties.example`
+- `android/keystore/signing.properties`
+- `android/keystore/dena-release.keystore`
 
 ## Create your keystore once (local)
 
@@ -50,31 +48,29 @@ keyAlias=dena
 keyPassword=YOUR_KEY_PASSWORD
 ```
 
-Then place your keystore file at:
+Place your keystore file at:
 
 - `android/keystore/dena-release.keystore`
 
-Both are ignored by git.
-
 ## Build outputs
 
-GitHub workflow builds debug APK only:
+GitHub workflow builds signed release APK:
 
-- `Dena-Android-Debug-APK` -> `Dena-debug.apk`
+- Artifact name: `Dena-Android-v<versionName>-<versionCode>`
+- APK filename: `Dena-v<versionName>.apk`
 
-For update-safe production install, build locally with your signing file:
+You can still build locally with the same signing files:
 
 ```powershell
 npm run build
 npx cap sync android
 cd android
-.\gradlew clean assembleRelease bundleRelease
+.\gradlew clean assembleRelease
 ```
 
 Release outputs:
 
 - `android/app/build/outputs/apk/release/app-release.apk`
-- `android/app/build/outputs/bundle/release/app-release.aab`
 
 ## Versioning rule per release
 

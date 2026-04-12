@@ -23,6 +23,3 @@ dist-ssr
 *.sln
 *.sw?
 android/app/release-keystore.jks
-android/keystore/signing.properties
-android/keystore/*.jks
-android/keystore/*.keystore
