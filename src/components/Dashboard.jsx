@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import LoanCard from './LoanCard';
 import { getSummaryStats, getAvailableYears } from '../utils/loanManager';
 
@@ -14,6 +14,8 @@ export default function Dashboard({ loans, onPaymentClick, onSettleClick, onDele
   const [activeTab, setActiveTab] = useState('ACTIVE'); // ACTIVE or DONE
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
+  const [openFilterMenu, setOpenFilterMenu] = useState(null);
+  const filterMenuRef = useRef(null);
   
   const { totalActivePrincipal, totalInterestCollected, monthlyInterest } = getSummaryStats(loans, selectedYear, selectedMonth);
   const availableYears = getAvailableYears(loans);
@@ -21,6 +23,17 @@ export default function Dashboard({ loans, onPaymentClick, onSettleClick, onDele
   const displayedLoans = loans.filter(loan => loan.status === activeTab).sort((a, b) => {
     return new Date(a.nextPaymentDate) - new Date(b.nextPaymentDate);
   });
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (!filterMenuRef.current?.contains(event.target)) {
+        setOpenFilterMenu(null);
+      }
+    };
+
+    document.addEventListener('pointerdown', handleClickOutside);
+    return () => document.removeEventListener('pointerdown', handleClickOutside);
+  }, []);
 
   return (
     <div className="w-full">
@@ -31,21 +44,60 @@ export default function Dashboard({ loans, onPaymentClick, onSettleClick, onDele
         <div className="summary-header flex justify-end items-center flex-wrap gap-4" style={{ padding: '0.75rem 1.25rem' }}>
             
             {/* Monthly Report Timeline Selector */}
-            <div className="flex gap-2 w-full-mobile justify-end">
-               <select 
-                  className="report-select" 
-                  value={selectedMonth} 
-                  onChange={(e) => setSelectedMonth(Number(e.target.value))}
-               >
-                  {banglaMonths.map((m, i) => <option key={i} value={i}>{m}</option>)}
-               </select>
-               <select 
-                  className="report-select" 
-                  value={selectedYear} 
-                  onChange={(e) => setSelectedYear(Number(e.target.value))}
-               >
-                  {availableYears.map(y => <option key={y} value={y}>{toBnYear(y)}</option>)}
-               </select>
+            <div ref={filterMenuRef} className="flex gap-2 w-full-mobile justify-end summary-filter-row">
+              <div className="custom-select">
+                <button
+                  type="button"
+                  className={`report-select report-select-btn ${openFilterMenu === 'month' ? 'active' : ''}`}
+                  onClick={() => setOpenFilterMenu((prev) => (prev === 'month' ? null : 'month'))}
+                >
+                  {banglaMonths[selectedMonth]}
+                </button>
+                {openFilterMenu === 'month' && (
+                  <div className="custom-select-menu">
+                    {banglaMonths.map((month, index) => (
+                      <button
+                        key={month}
+                        type="button"
+                        className={`custom-select-option ${index === selectedMonth ? 'selected' : ''}`}
+                        onClick={() => {
+                          setSelectedMonth(index);
+                          setOpenFilterMenu(null);
+                        }}
+                      >
+                        {month}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="custom-select">
+                <button
+                  type="button"
+                  className={`report-select report-select-btn ${openFilterMenu === 'year' ? 'active' : ''}`}
+                  onClick={() => setOpenFilterMenu((prev) => (prev === 'year' ? null : 'year'))}
+                >
+                  {toBnYear(selectedYear)}
+                </button>
+                {openFilterMenu === 'year' && (
+                  <div className="custom-select-menu">
+                    {availableYears.map((year) => (
+                      <button
+                        key={year}
+                        type="button"
+                        className={`custom-select-option ${year === selectedYear ? 'selected' : ''}`}
+                        onClick={() => {
+                          setSelectedYear(year);
+                          setOpenFilterMenu(null);
+                        }}
+                      >
+                        {toBnYear(year)}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
         </div>
         

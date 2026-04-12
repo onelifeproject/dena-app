@@ -32,6 +32,7 @@ export default function App() {
     const setupSystemBars = async () => {
       if (!Capacitor.isNativePlatform() || Capacitor.getPlatform() !== 'android') return;
 
+      await StatusBar.show();
       await StatusBar.setOverlaysWebView({ overlay: false });
       await StatusBar.setBackgroundColor({ color: '#07070a' });
       await StatusBar.setStyle({ style: Style.Light });

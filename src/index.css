@@ -225,6 +225,11 @@ h1, h2, h3, h4 {
       width: 100%;
       justify-content: space-between !important;
   }
+  .custom-select-menu {
+      left: 0;
+      right: auto;
+      min-width: 100%;
+  }
 
   .status-text {
       display: block;
@@ -468,6 +473,61 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
   flex-wrap: wrap;
   gap: 0.5rem;
   justify-content: flex-end;
+}
+
+.summary-filter-row {
+  position: relative;
+}
+
+.custom-select {
+  position: relative;
+}
+
+.report-select-btn {
+  text-align: left;
+}
+
+.report-select-btn.active {
+  border-color: rgba(139, 92, 246, 0.7);
+  background-color: rgba(139, 92, 246, 0.16);
+  color: var(--text-pure);
+}
+
+.custom-select-menu {
+  position: absolute;
+  top: calc(100% + 0.35rem);
+  right: 0;
+  min-width: 100%;
+  max-height: 14rem;
+  overflow-y: auto;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(16, 16, 21, 0.97);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.45);
+  z-index: 50;
+}
+
+.custom-select-option {
+  width: 100%;
+  border: none;
+  background: transparent;
+  color: var(--text-primary);
+  text-align: left;
+  padding: 0.58rem 0.65rem;
+  font-family: var(--font-heading);
+  font-size: 0.84rem;
+  cursor: pointer;
+}
+
+.custom-select-option:hover {
+  background: rgba(139, 92, 246, 0.16);
+  color: var(--text-pure);
+}
+
+.custom-select-option.selected {
+  background: rgba(139, 92, 246, 0.24);
+  color: var(--text-pure);
+  font-weight: 700;
 }
 
 /* Flex utils */
