@@ -1,5 +1,12 @@
 {
   "appId": "com.dena.app",
   "appName": "Dena",
-  "webDir": "dist"
+  "webDir": "dist",
+  "plugins": {
+    "StatusBar": {
+      "overlaysWebView": false,
+      "backgroundColor": "#07070a",
+      "style": "LIGHT"
+    }
+  }
 }

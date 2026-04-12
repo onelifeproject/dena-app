@@ -1,4 +1,4 @@
-name: Automated Android APK Cloud Build
+name: Android Debug Cloud Build
 
 on:
   push:
@@ -30,18 +30,18 @@ jobs:
     - name: Bundle Web Dashboard (dist)
       run: npm run build
 
-    - name: Sync React Native Core to Android
+    - name: Sync Capacitor Web App to Android
       run: npx cap sync android
 
-    - name: Execute Gradle APK Compilation
+    - name: Build Debug APK
       working-directory: ./android
       run: |
         chmod +x ./gradlew
-        ./gradlew assembleDebug
-        mv ./app/build/outputs/apk/debug/app-debug.apk ./app/build/outputs/apk/debug/Dena.apk
+        ./gradlew clean assembleDebug
+        mv ./app/build/outputs/apk/debug/app-debug.apk ./app/build/outputs/apk/debug/Dena-debug.apk
 
-    - name: Capture Output APK & Upload Download Link
+    - name: Upload Debug APK Artifact
       uses: actions/upload-artifact@v4
       with:
-        name: Dena-Android
-        path: android/app/build/outputs/apk/debug/Dena.apk
+        name: Dena-Android-Debug-APK
+        path: android/app/build/outputs/apk/debug/Dena-debug.apk

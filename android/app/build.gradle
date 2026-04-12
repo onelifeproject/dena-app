@@ -1,5 +1,18 @@
 apply plugin: 'com.android.application'
 
+def localSigningProps = new Properties()
+def localSigningFile = rootProject.file("keystore/signing.properties")
+if (localSigningFile.exists()) {
+    localSigningFile.withInputStream { stream ->
+        localSigningProps.load(stream)
+    }
+}
+
+def releaseKeystoreFile = localSigningProps.getProperty("storeFile") ?: System.getenv("ANDROID_KEYSTORE_PATH")
+def releaseKeystorePassword = localSigningProps.getProperty("storePassword") ?: System.getenv("ANDROID_KEYSTORE_PASSWORD")
+def releaseKeyAlias = localSigningProps.getProperty("keyAlias") ?: System.getenv("ANDROID_KEY_ALIAS")
+def releaseKeyPassword = localSigningProps.getProperty("keyPassword") ?: System.getenv("ANDROID_KEY_PASSWORD")
+
 android {
     namespace = "com.dena.app"
     compileSdk = rootProject.ext.compileSdkVersion
@@ -16,10 +29,23 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    signingConfigs {
+        release {
+            if (releaseKeystoreFile && releaseKeystorePassword && releaseKeyAlias && releaseKeyPassword) {
+                storeFile file(releaseKeystoreFile)
+                storePassword releaseKeystorePassword
+                keyAlias releaseKeyAlias
+                keyPassword releaseKeyPassword
+            }
+        }
+    }
     buildTypes {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            if (releaseKeystoreFile && releaseKeystorePassword && releaseKeyAlias && releaseKeyPassword) {
+                signingConfig signingConfigs.release
+            }
         }
     }
 }

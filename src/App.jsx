@@ -62,9 +62,7 @@ export default function App() {
     return () => clearTimeout(timer);
   }, [logoTapCount]);
 
-  const handleLogoTap = (event) => {
-    // Keep the page from reloading while using the hidden tap gesture.
-    event.preventDefault();
+  const handleLogoTap = () => {
     setLogoTapCount((count) => {
       const next = count + 1;
       if (next >= 7) {
@@ -130,18 +128,28 @@ export default function App() {
   return (
     <div className="app-container" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       <header className="app-header">
-        <a
-          href="/"
+        <button
+          type="button"
           className="logo-link"
-          style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-          onClick={handleLogoTap}
+          style={{
+            textDecoration: 'none',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            width: '100%',
+            background: 'transparent',
+            border: 'none',
+            padding: 0,
+            cursor: 'pointer',
+          }}
+          onPointerDown={handleLogoTap}
         >
           <img src="/favicon.png" alt="App Logo" className="app-main-logo" style={{ width: '2.8rem', height: '2.8rem', marginRight: '1rem', borderRadius: '0.5rem', boxShadow: '0 0 20px rgba(139, 92, 246, 0.4)' }} />
           <div>
             <h1 className="text-3xl font-bold text-brand-gradient" style={{ lineHeight: '1.2', margin: 0, padding: 0 }}>হিসাব রক্ষক</h1>
             <p className="text-base font-medium mt-1" style={{ color: 'var(--text-secondary)', margin: 0, padding: 0 }}>লোন এবং সুদের হিসাব</p>
           </div>
-        </a>
+        </button>
       </header>
 
       <LiveClock />

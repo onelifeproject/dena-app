@@ -59,6 +59,7 @@ body {
     radial-gradient(circle at 90% 20%, rgba(59, 130, 246, 0.05), transparent 25%);
   background-attachment: fixed;
   overscroll-behavior-y: auto; /* Forces Chrome's native Pull-To-Refresh to work */
+  padding-top: env(safe-area-inset-top, 0px);
 }
 
 h1, h2, h3, h4 {
@@ -76,11 +77,16 @@ h1, h2, h3, h4 {
 
 /* Very Sleek, Clean, Professional Header */
 .app-header {
-  background: transparent;
+  background: rgba(7, 7, 10, 0.9);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   padding: 0.5rem 0; /* Ultra Compact */
   margin-bottom: 2rem;
   text-align: center;
   border-bottom: 1px solid var(--border-subtle);
+  position: sticky;
+  top: 0;
+  z-index: 20;
 }
 
 /* Tabs */
