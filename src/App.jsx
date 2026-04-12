@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import { Capacitor } from '@capacitor/core';
+import { StatusBar, Style } from '@capacitor/status-bar';
 import Dashboard from './components/Dashboard';
 import AddLoanForm from './components/AddLoanForm';
 import PaymentModal from './components/PaymentModal';
@@ -26,6 +28,18 @@ export default function App() {
   const [logoTapCount, setLogoTapCount] = useState(0);
 
   useEffect(() => {
+    const setupSystemBars = async () => {
+      if (!Capacitor.isNativePlatform() || Capacitor.getPlatform() !== 'android') return;
+
+      await StatusBar.setOverlaysWebView({ overlay: false });
+      await StatusBar.setBackgroundColor({ color: '#07070a' });
+      await StatusBar.setStyle({ style: Style.Light });
+    };
+
+    setupSystemBars();
+  }, []);
+
+  useEffect(() => {
     const setupNotifications = async () => {
       const allowed = await requestNotificationAccess();
       if (!allowed) return;
@@ -44,11 +58,13 @@ export default function App() {
 
   useEffect(() => {
     if (logoTapCount === 0) return;
-    const timer = setTimeout(() => setLogoTapCount(0), 3000);
+    const timer = setTimeout(() => setLogoTapCount(0), 6000);
     return () => clearTimeout(timer);
   }, [logoTapCount]);
 
-  const handleLogoTap = () => {
+  const handleLogoTap = (event) => {
+    // Keep the page from reloading while using the hidden tap gesture.
+    event.preventDefault();
     setLogoTapCount((count) => {
       const next = count + 1;
       if (next >= 7) {
