@@ -33,15 +33,24 @@ jobs:
     - name: Sync Capacitor Web App to Android
       run: npx cap sync android
 
+    - name: Read Android Version Metadata
+      run: |
+        VERSION_CODE=$(awk '/versionCode/ {print $2; exit}' android/app/build.gradle)
+        VERSION_NAME=$(awk -F'"' '/versionName/ {print $2; exit}' android/app/build.gradle)
+        APK_FILE_NAME="Dena-v${VERSION_NAME}(${VERSION_CODE})-debug.apk"
+        echo "VERSION_CODE=$VERSION_CODE" >> "$GITHUB_ENV"
+        echo "VERSION_NAME=$VERSION_NAME" >> "$GITHUB_ENV"
+        echo "APK_FILE_NAME=$APK_FILE_NAME" >> "$GITHUB_ENV"
+
     - name: Build Debug APK
       working-directory: ./android
       run: |
         chmod +x ./gradlew
         ./gradlew clean assembleDebug
-        mv ./app/build/outputs/apk/debug/app-debug.apk ./app/build/outputs/apk/debug/Dena-debug.apk
+        mv ./app/build/outputs/apk/debug/app-debug.apk "./app/build/outputs/apk/debug/${APK_FILE_NAME}"
 
     - name: Upload Debug APK Artifact
       uses: actions/upload-artifact@v4
       with:
-        name: Dena-Android-Debug-APK
-        path: android/app/build/outputs/apk/debug/Dena-debug.apk
+        name: Dena-Android-Debug-v${{ env.VERSION_NAME }}-${{ env.VERSION_CODE }}
+        path: android/app/build/outputs/apk/debug/${{ env.APK_FILE_NAME }}

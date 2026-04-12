@@ -3,6 +3,7 @@ import { LocalNotifications } from '@capacitor/local-notifications';
 
 const TIMEZONE = 'Asia/Dhaka';
 const CHANNEL_ID = 'loan-reminders';
+const SMALL_ICON = 'ic_stat_dena';
 const ID_NAMESPACE_MIN = 710000000;
 const ID_NAMESPACE_MAX = 719999999;
 const DEBUG_NAMESPACE_MIN = 720000000;
@@ -72,6 +73,7 @@ const buildLoanNotifications = (loan) => {
       body: `${loan.name} এর কিস্তি আগামীকাল। প্রাপ্য লাভ: ${Number(loan.interestPerWeek).toLocaleString('bn-BD')} টাকা।`,
       schedule: { at: dayBeforeAt4, allowWhileIdle: true },
       channelId: CHANNEL_ID,
+      smallIcon: SMALL_ICON,
     });
   }
 
@@ -82,6 +84,7 @@ const buildLoanNotifications = (loan) => {
       body: `${loan.name} আজ কিস্তি দেওয়ার কথা। প্রাপ্য লাভ: ${Number(loan.interestPerWeek).toLocaleString('bn-BD')} টাকা।`,
       schedule: { at: dueAt4, allowWhileIdle: true },
       channelId: CHANNEL_ID,
+      smallIcon: SMALL_ICON,
     });
   }
 
@@ -92,6 +95,7 @@ const buildLoanNotifications = (loan) => {
       body: `${loan.name} এর কিস্তি এখনো বাকি। আজ বিকাল ৪টার মধ্যে হিসাব আপডেট করুন।`,
       schedule: { at: getNextDhakaFourPm(), every: 'day', allowWhileIdle: true },
       channelId: CHANNEL_ID,
+      smallIcon: SMALL_ICON,
     });
   }
 
@@ -180,6 +184,7 @@ export const scheduleDebugTestNotification = async (secondsFromNow = 30) => {
         body: `এই টেস্ট নোটিফিকেশন ${secondsFromNow} সেকেন্ড পরে পাঠানো হয়েছে।`,
         schedule: { at, allowWhileIdle: true },
         channelId: CHANNEL_ID,
+        smallIcon: SMALL_ICON,
       },
     ],
   });
@@ -197,4 +202,45 @@ export const clearDebugNotifications = async () => {
   if (debugPending.length > 0) {
     await LocalNotifications.cancel({ notifications: debugPending });
   }
+};
+
+export const scheduleRealMessagePreviewNotifications = async (loan) => {
+  if (!isAndroidNative()) return [];
+  const permission = await LocalNotifications.checkPermissions();
+  if (permission.display !== 'granted') return [];
+
+  const now = Date.now();
+  const customerName = loan?.name || 'রহিম মিয়া';
+  const weeklyInterest = Number(loan?.interestPerWeek || 2000).toLocaleString('bn-BD');
+  const overdueCount = 1;
+
+  const notifications = [
+    {
+      id: DEBUG_NAMESPACE_MIN + ((now + 10000) % 100000),
+      title: 'আগামীকাল কিস্তির দিন',
+      body: `${customerName} এর কিস্তি আগামীকাল। প্রাপ্য লাভ: ${weeklyInterest} টাকা।`,
+      schedule: { at: new Date(now + 10000), allowWhileIdle: true },
+      channelId: CHANNEL_ID,
+      smallIcon: SMALL_ICON,
+    },
+    {
+      id: DEBUG_NAMESPACE_MIN + ((now + 20000) % 100000),
+      title: 'আজ কিস্তি নেওয়ার দিন',
+      body: `${customerName} আজ কিস্তি দেওয়ার কথা। প্রাপ্য লাভ: ${weeklyInterest} টাকা।`,
+      schedule: { at: new Date(now + 20000), allowWhileIdle: true },
+      channelId: CHANNEL_ID,
+      smallIcon: SMALL_ICON,
+    },
+    {
+      id: DEBUG_NAMESPACE_MIN + ((now + 30000) % 100000),
+      title: 'বকেয়া কিস্তি মনে করিয়ে দিচ্ছি',
+      body: `আজকের হিসাবে ${Number(overdueCount).toLocaleString('bn-BD')} জনের কিস্তি বকেয়া আছে। অ্যাপ খুলে হিসাব আপডেট করুন।`,
+      schedule: { at: new Date(now + 30000), allowWhileIdle: true },
+      channelId: CHANNEL_ID,
+      smallIcon: SMALL_ICON,
+    },
+  ];
+
+  await LocalNotifications.schedule({ notifications });
+  return notifications.map((item) => ({ id: item.id, at: item.schedule.at }));
 };

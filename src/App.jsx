@@ -14,6 +14,7 @@ import {
   syncLoanNotifications,
   getLoanPendingNotifications,
   scheduleDebugTestNotification,
+  scheduleRealMessagePreviewNotifications,
   clearLoanNotifications,
   clearDebugNotifications,
 } from './services/notificationService';
@@ -120,6 +121,11 @@ export default function App() {
 
   const handleDebugTest = async () => scheduleDebugTestNotification(30);
 
+  const handleDebugRealPreview = async () => {
+    const sourceLoan = loans.find((item) => item.status === 'ACTIVE') || loans[0];
+    return scheduleRealMessagePreviewNotifications(sourceLoan);
+  };
+
   const handleDebugClearAll = async () => {
     await clearLoanNotifications();
     await clearDebugNotifications();
@@ -170,6 +176,7 @@ export default function App() {
             onResync={handleDebugResync}
             onGetPending={handleDebugGetPending}
             onSendTest={handleDebugTest}
+            onSendRealPreview={handleDebugRealPreview}
             onClearAll={handleDebugClearAll}
           />
         )}

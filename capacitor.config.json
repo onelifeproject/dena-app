@@ -3,6 +3,10 @@
   "appName": "Dena",
   "webDir": "dist",
   "plugins": {
+    "LocalNotifications": {
+      "smallIcon": "ic_stat_dena",
+      "iconColor": "#8B5CF6"
+    },
     "StatusBar": {
       "overlaysWebView": false,
       "backgroundColor": "#07070a",

@@ -6,6 +6,7 @@ export default function NotificationDebugPanel({
   onResync,
   onGetPending,
   onSendTest,
+  onSendRealPreview,
   onClearAll,
 }) {
   const [status, setStatus] = useState('Ready');
@@ -35,6 +36,14 @@ export default function NotificationDebugPanel({
     }
   };
 
+  const sendRealPreview = async () => {
+    const result = await handleAction(onSendRealPreview, 'Real previews scheduled');
+    if (result?.length) {
+      const previewTimes = result.map((item) => new Date(item.at).toLocaleTimeString('bn-BD')).join(', ');
+      setStatus(`Real messages যাবে: ${previewTimes}`);
+    }
+  };
+
   return (
     <div className="glass-card mt-6" style={{ padding: '1rem' }}>
       <div className="flex justify-between items-center mb-4">
@@ -51,6 +60,9 @@ export default function NotificationDebugPanel({
         </button>
         <button className="btn btn-secondary btn-sm" onClick={sendTest}>
           Send Test (30s)
+        </button>
+        <button className="btn btn-secondary btn-sm" onClick={sendRealPreview}>
+          Real Messages (10/20/30s)
         </button>
         <button className="btn btn-secondary btn-sm" onClick={loadPending}>
           Show Pending
