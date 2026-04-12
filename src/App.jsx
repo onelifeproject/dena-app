@@ -192,7 +192,7 @@ export default function App() {
       </main>
 
       <footer className="w-full text-center" style={{ marginTop: 'auto', paddingTop: '2rem', paddingBottom: '1rem', borderTop: '1px solid var(--border-subtle)' }}>
-        <p className="text-xs text-muted">© ২০২৬ হিসাব রক্ষক। সমস্ত অধিকার সংরক্ষিত।</p>
+        <p className="text-xs text-muted">© ২০২৬ হিসাব রক্ষক। তৈরি করেছে সুজিৎ বিশ্বাস</p>
       </footer>
 
       {isAddingLoan && (

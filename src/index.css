@@ -759,6 +759,89 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
   background: rgba(255, 255, 255, 0.03);
 }
 
+.proof-uploader-card {
+  border: 1px dashed rgba(139, 92, 246, 0.55);
+  border-radius: 14px;
+  padding: 0.85rem;
+  background: rgba(139, 92, 246, 0.06);
+}
+
+.proof-uploader-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.proof-pill {
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-secondary);
+  font-size: 0.72rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 999px;
+}
+
+.proof-actions-row {
+  display: flex;
+  gap: 0.6rem;
+  margin-top: 0.9rem;
+  flex-wrap: wrap;
+}
+
+.proof-preview-wrap {
+  margin-top: 0.75rem;
+}
+
+.proof-preview-image {
+  width: 100%;
+  max-height: 190px;
+  object-fit: cover;
+  border-radius: 12px;
+  border: 1px solid var(--border-subtle);
+}
+
+.crop-modal-content {
+  max-width: 680px;
+}
+
+.doc-crop-wrapper {
+  position: relative;
+  width: 100%;
+  min-height: 280px;
+  border-radius: 14px;
+  overflow: hidden;
+  background: #000;
+  border: 1px solid var(--border-subtle);
+  padding: 0.4rem;
+}
+
+.doc-react-crop {
+  width: 100%;
+  max-height: 62vh;
+}
+
+.doc-crop-image {
+  width: 100%;
+  max-height: 60vh;
+  object-fit: contain;
+  display: block;
+}
+
+.ReactCrop__crop-selection {
+  border: 2px solid rgba(255, 255, 255, 0.95);
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.38);
+}
+
+.ReactCrop__drag-handle::after {
+  background-color: #fff;
+  border: 1px solid rgba(0, 0, 0, 0.55);
+}
+
+.crop-action-wrap .btn {
+  min-width: 0;
+}
+
 @media (max-width: 640px) {
   .loan-details-grid {
     grid-template-columns: 1fr;
@@ -767,6 +850,18 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
   .loan-history-item {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .proof-actions-row .btn {
+    width: 100%;
+  }
+
+  .doc-crop-wrapper {
+    min-height: 220px;
+  }
+
+  .crop-action-wrap {
+    flex-direction: column-reverse;
   }
 }
 

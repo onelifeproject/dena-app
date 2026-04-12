@@ -9,6 +9,35 @@ const toBnAmount = (amount) => Number(amount).toLocaleString('bn-BD');
 
 export default function LoanDetailsModal({ loan, onClose }) {
   if (!loan) return null;
+  const fileName = `${loan.name || 'loan'}-proof.jpg`.replace(/\s+/g, '-');
+
+  const handleJpgDownload = async () => {
+    if (!loan.proofImage?.dataUrl) return;
+
+    const image = new Image();
+    image.src = loan.proofImage.dataUrl;
+
+    await new Promise((resolve, reject) => {
+      image.onload = resolve;
+      image.onerror = reject;
+    });
+
+    const canvas = document.createElement('canvas');
+    canvas.width = image.width;
+    canvas.height = image.height;
+    const context = canvas.getContext('2d');
+    if (!context) return;
+
+    context.fillStyle = '#ffffff';
+    context.fillRect(0, 0, canvas.width, canvas.height);
+    context.drawImage(image, 0, 0);
+
+    const jpgDataUrl = canvas.toDataURL('image/jpeg', 0.92);
+    const link = document.createElement('a');
+    link.href = jpgDataUrl;
+    link.download = fileName;
+    link.click();
+  };
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -62,7 +91,18 @@ export default function LoanDetailsModal({ loan, onClose }) {
         <div className="loan-proof-block">
           <h3 className="text-base font-bold mb-2">ডকুমেন্ট প্রুফ</h3>
           {loan.proofImage?.dataUrl ? (
-            <img src={loan.proofImage.dataUrl} alt={`${loan.name} proof`} className="loan-proof-image" />
+            <>
+              <img src={loan.proofImage.dataUrl} alt={`${loan.name} proof`} className="loan-proof-image" />
+              <div className="mt-4">
+                <button
+                  type="button"
+                  className="btn btn-secondary btn-sm"
+                  onClick={handleJpgDownload}
+                >
+                  ছবি ডাউনলোড করুন
+                </button>
+              </div>
+            </>
           ) : (
             <p className="text-sm text-muted">কোনো ছবি যোগ করা হয়নি।</p>
           )}

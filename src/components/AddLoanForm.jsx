@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { compressImage } from '../utils/imageCompression';
+import DocumentCropModal from './DocumentCropModal';
 
 export default function AddLoanForm({ onSave, onCancel }) {
   const [name, setName] = useState('');
@@ -14,6 +15,10 @@ export default function AddLoanForm({ onSave, onCancel }) {
   const [proofImage, setProofImage] = useState(null);
   const [imageError, setImageError] = useState('');
   const [isProcessingImage, setIsProcessingImage] = useState(false);
+  const [cropSource, setCropSource] = useState(null);
+  const [cropSourceName, setCropSourceName] = useState('proof-image.png');
+  const cameraInputRef = useRef(null);
+  const galleryInputRef = useRef(null);
 
   const handlePrincipalChange = (value) => {
     setPrincipal(value);
@@ -24,21 +29,38 @@ export default function AddLoanForm({ onSave, onCancel }) {
     }
   };
 
-  const handleImageChange = async (event) => {
-    const file = event.target.files?.[0];
-    if (!file) {
-      setProofImage(null);
-      setImageError('');
-      return;
-    }
+  const fileToDataUrl = (file) =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = () => reject(new Error('ছবি পড়া যায়নি।'));
+      reader.readAsDataURL(file);
+    });
 
+  const handleImagePick = async (event) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) return;
+
+    try {
+      setImageError('');
+      const source = await fileToDataUrl(file);
+      setCropSource(source);
+      setCropSourceName(file.name || 'proof-image.png');
+    } catch (error) {
+      setImageError(error.message || 'ছবি প্রসেস করা যায়নি।');
+    }
+  };
+
+  const handleCropConfirm = async (blob) => {
     try {
       setIsProcessingImage(true);
       setImageError('');
+      const file = new File([blob], cropSourceName, { type: blob.type || 'image/png' });
       const compressed = await compressImage(file);
       setProofImage(compressed);
+      setCropSource(null);
     } catch (error) {
-      setProofImage(null);
       setImageError(error.message || 'ছবি প্রসেস করা যায়নি।');
     } finally {
       setIsProcessingImage(false);
@@ -127,13 +149,50 @@ export default function AddLoanForm({ onSave, onCancel }) {
 
           <div className="form-group mb-8">
             <label className="form-label">ডকুমেন্ট প্রুফ ছবি (ঐচ্ছিক)</label>
-            <input
-              type="file"
-              className="form-input"
-              accept="image/*"
-              capture="environment"
-              onChange={handleImageChange}
-            />
+            <div className="proof-uploader-card">
+              <div className="proof-uploader-head">
+                <div>
+                  <p className="text-sm font-semibold">Document Proof</p>
+                  <p className="text-xs text-muted">স্ক্যান ফ্রেমে ক্রপ করে পরিষ্কার ছবি সেভ হবে</p>
+                </div>
+                <span className="proof-pill">Optional</span>
+              </div>
+
+              <div className="proof-actions-row">
+                <button
+                  type="button"
+                  className="btn btn-secondary btn-sm"
+                  onClick={() => cameraInputRef.current?.click()}
+                  disabled={isProcessingImage}
+                >
+                  ক্যামেরা দিয়ে তুলুন
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-secondary btn-sm"
+                  onClick={() => galleryInputRef.current?.click()}
+                  disabled={isProcessingImage}
+                >
+                  গ্যালারি থেকে নিন
+                </button>
+              </div>
+
+              <input
+                ref={cameraInputRef}
+                type="file"
+                accept="image/*"
+                capture="environment"
+                onChange={handleImagePick}
+                style={{ display: 'none' }}
+              />
+              <input
+                ref={galleryInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleImagePick}
+                style={{ display: 'none' }}
+              />
+            </div>
             <span className="text-xs text-muted" style={{ marginLeft: '0.25rem', marginTop: '0.25rem' }}>
               ছবি দিলে কমপ্রেস করে সেভ হবে। ছবি না দিলেও হিসাব সেভ হবে।
             </span>
@@ -148,18 +207,20 @@ export default function AddLoanForm({ onSave, onCancel }) {
               </span>
             )}
             {proofImage?.dataUrl && (
-              <div style={{ marginTop: '0.75rem' }}>
+              <div className="proof-preview-wrap">
                 <img
                   src={proofImage.dataUrl}
                   alt="Proof preview"
-                  style={{
-                    width: '100%',
-                    maxHeight: '170px',
-                    objectFit: 'cover',
-                    borderRadius: '12px',
-                    border: '1px solid var(--border-subtle)',
-                  }}
+                  className="proof-preview-image"
                 />
+                <button
+                  type="button"
+                  className="btn btn-danger btn-sm"
+                  onClick={() => setProofImage(null)}
+                  style={{ marginTop: '0.75rem' }}
+                >
+                  ছবি সরান
+                </button>
               </div>
             )}
           </div>
@@ -173,6 +234,15 @@ export default function AddLoanForm({ onSave, onCancel }) {
           </button>
         </form>
       </div>
+
+      {cropSource && (
+        <DocumentCropModal
+          imageSrc={cropSource}
+          onCancel={() => setCropSource(null)}
+          onConfirm={handleCropConfirm}
+          isProcessing={isProcessingImage}
+        />
+      )}
     </div>
   );
 }
