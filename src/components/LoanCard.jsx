@@ -1,6 +1,6 @@
 import { calculateDaysLeft } from '../utils/loanManager';
 
-export default function LoanCard({ loan, onPaymentClick, onSettleClick, onDeleteClick }) {
+export default function LoanCard({ loan, onPaymentClick, onSettleClick, onDeleteClick, onOpenDetails }) {
   const daysLeft = calculateDaysLeft(loan.nextPaymentDate);
   const isOverdue = daysLeft < 0;
 
@@ -20,7 +20,18 @@ export default function LoanCard({ loan, onPaymentClick, onSettleClick, onDelete
       : null;
 
   return (
-    <div className={`glass-card loan-card-container ${isOverdue && loan.status === 'ACTIVE' ? 'overdue-alert' : ''}`}>
+    <div
+      className={`glass-card loan-card-container clickable-loan-card ${isOverdue && loan.status === 'ACTIVE' ? 'overdue-alert' : ''}`}
+      role="button"
+      tabIndex={0}
+      onClick={() => onOpenDetails(loan)}
+      onKeyDown={(event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          onOpenDetails(loan);
+        }
+      }}
+    >
       
       {/* Left side info (Name and dates) */}
       <div className="loan-card-info">
@@ -84,13 +95,19 @@ export default function LoanCard({ loan, onPaymentClick, onSettleClick, onDelete
            <>
                <button 
                   className="btn btn-primary compact-btn" 
-                  onClick={() => onPaymentClick(loan)}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onPaymentClick(loan);
+                  }}
                 >
                   লাভ জমা
                </button>
                <button 
                   className="btn btn-secondary compact-btn" 
-                  onClick={() => onSettleClick(loan)}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onSettleClick(loan);
+                  }}
                 >
                   পরিশোধ
                </button>
@@ -101,7 +118,10 @@ export default function LoanCard({ loan, onPaymentClick, onSettleClick, onDelete
         
         <button 
            className="btn btn-danger compact-btn" 
-           onClick={onDeleteClick}
+           onClick={(event) => {
+             event.stopPropagation();
+             onDeleteClick();
+           }}
         >
           মুছে ফেলুন
         </button>

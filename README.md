@@ -12,15 +12,17 @@ npm run dev
 ## Android Build (Local)
 
 ```bash
-npm run build
-npx cap sync android
-cd android
-./gradlew clean assembleRelease
+npm run android:release
 ```
 
 Release APK output:
 
 - `android/app/build/outputs/apk/release/app-release.apk`
+- If you want manual steps instead:
+  - `npm run build`
+  - `npx cap sync android`
+  - `cd android`
+  - `gradlew.bat clean assembleRelease`
 
 ## Where To Change Version (Important)
 

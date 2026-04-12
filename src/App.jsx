@@ -5,6 +5,7 @@ import Dashboard from './components/Dashboard';
 import AddLoanForm from './components/AddLoanForm';
 import PaymentModal from './components/PaymentModal';
 import DeleteModal from './components/DeleteModal';
+import LoanDetailsModal from './components/LoanDetailsModal';
 import LiveClock from './components/LiveClock';
 import NotificationDebugPanel from './components/NotificationDebugPanel';
 import { getLoans, addLoan, collectPayment, deleteLoan } from './utils/loanManager';
@@ -24,6 +25,7 @@ export default function App() {
   const [isAddingLoan, setIsAddingLoan] = useState(false);
   const [activePaymentModal, setActivePaymentModal] = useState({ show: false, loan: null, isSettle: false });
   const [activeDeleteModal, setActiveDeleteModal] = useState({ show: false, loan: null });
+  const [activeLoanDetailsId, setActiveLoanDetailsId] = useState(null);
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   const [showNotificationDebug, setShowNotificationDebug] = useState(false);
   const [logoTapCount, setLogoTapCount] = useState(0);
@@ -103,7 +105,12 @@ export default function App() {
     const updatedLoans = deleteLoan(loanId);
     setLoans(updatedLoans);
     setActiveDeleteModal({ show: false, loan: null });
+    if (activeLoanDetailsId === loanId) {
+      setActiveLoanDetailsId(null);
+    }
   };
+
+  const activeLoanDetails = loans.find((loan) => loan.id === activeLoanDetailsId) || null;
 
   const handleDebugPermissionCheck = async () => {
     const allowed = await requestNotificationAccess();
@@ -168,6 +175,7 @@ export default function App() {
           onSettleClick={handleSettleClick}
           onDeleteClick={handleDeleteRequest}
           onAddNewClick={() => setIsAddingLoan(true)}
+          onLoanSelect={(loan) => setActiveLoanDetailsId(loan.id)}
         />
 
         {showNotificationDebug && (
@@ -208,6 +216,13 @@ export default function App() {
           loan={activeDeleteModal.loan}
           onConfirm={handleDeleteConfirm}
           onCancel={() => setActiveDeleteModal({ show: false, loan: null })}
+        />
+      )}
+
+      {activeLoanDetails && (
+        <LoanDetailsModal
+          loan={activeLoanDetails}
+          onClose={() => setActiveLoanDetailsId(null)}
         />
       )}
     </div>

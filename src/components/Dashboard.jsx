@@ -10,7 +10,7 @@ const banglaMonths = [
 // Helper to reliably translate years without thousand separators locally
 const toBnYear = (year) => Number(year).toLocaleString('bn-BD', { useGrouping: false });
 
-export default function Dashboard({ loans, onPaymentClick, onSettleClick, onDeleteClick, onAddNewClick }) {
+export default function Dashboard({ loans, onPaymentClick, onSettleClick, onDeleteClick, onAddNewClick, onLoanSelect }) {
   const [activeTab, setActiveTab] = useState('ACTIVE'); // ACTIVE or DONE
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
@@ -170,6 +170,7 @@ export default function Dashboard({ loans, onPaymentClick, onSettleClick, onDele
               onPaymentClick={onPaymentClick} 
               onSettleClick={onSettleClick}
               onDeleteClick={() => onDeleteClick(loan)}
+              onOpenDetails={onLoanSelect}
             />
           ))
         )}
