@@ -2,6 +2,17 @@
 
 Loan and weekly-interest tracking app (Bengali UI), built with React + Vite and packaged for Android via Capacitor.
 
+## What's New (2026-04)
+
+- Android back swipe/button now closes open modals first (instead of abruptly exiting app).
+- Loan proof images can be saved directly on native Android to `Documents/Dena/`.
+- Loan proof image viewer now supports full-screen pinch zoom/pan in:
+  - loan details modal
+  - add-loan preview modal
+- Settled (`পরিশোধিত`) cards now keep only meaningful action (`মুছে ফেলুন`).
+- Loan cards and summary cards now include stronger status-based highlight/glow styling.
+- Mobile tap/pressed states were refined so rounded buttons stay visually clipped and consistent.
+
 ## Run Locally
 
 ```bash

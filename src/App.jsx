@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Capacitor } from '@capacitor/core';
+import { App as CapacitorApp } from '@capacitor/app';
 import { StatusBar, Style } from '@capacitor/status-bar';
 import Dashboard from './components/Dashboard';
 import AddLoanForm from './components/AddLoanForm';
@@ -29,6 +30,17 @@ export default function App() {
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   const [showNotificationDebug, setShowNotificationDebug] = useState(false);
   const [logoTapCount, setLogoTapCount] = useState(0);
+  const isAddingLoanRef = useRef(isAddingLoan);
+  const isPaymentModalOpenRef = useRef(activePaymentModal.show);
+  const isDeleteModalOpenRef = useRef(activeDeleteModal.show);
+  const activeLoanDetailsIdRef = useRef(activeLoanDetailsId);
+
+  useEffect(() => {
+    isAddingLoanRef.current = isAddingLoan;
+    isPaymentModalOpenRef.current = activePaymentModal.show;
+    isDeleteModalOpenRef.current = activeDeleteModal.show;
+    activeLoanDetailsIdRef.current = activeLoanDetailsId;
+  }, [activeDeleteModal.show, activeLoanDetailsId, activePaymentModal.show, isAddingLoan]);
 
   useEffect(() => {
     const setupSystemBars = async () => {
@@ -65,6 +77,57 @@ export default function App() {
     const timer = setTimeout(() => setLogoTapCount(0), 6000);
     return () => clearTimeout(timer);
   }, [logoTapCount]);
+
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform() || Capacitor.getPlatform() !== 'android') return undefined;
+    const registerBackHandler = async () => {
+      const listener = await CapacitorApp.addListener('backButton', ({ canGoBack }) => {
+        if (activeLoanDetailsIdRef.current) {
+          setActiveLoanDetailsId(null);
+          return;
+        }
+
+        if (isDeleteModalOpenRef.current) {
+          setActiveDeleteModal({ show: false, loan: null });
+          return;
+        }
+
+        if (isPaymentModalOpenRef.current) {
+          setActivePaymentModal({ show: false, loan: null, isSettle: false });
+          return;
+        }
+
+        if (isAddingLoanRef.current) {
+          setIsAddingLoan(false);
+          return;
+        }
+
+        if (canGoBack) {
+          window.history.back();
+          return;
+        }
+
+        CapacitorApp.exitApp();
+      });
+
+      return () => listener.remove();
+    };
+
+    let disposed = false;
+    let cleanup = () => {};
+    registerBackHandler().then((listenerCleanup) => {
+      if (disposed) {
+        listenerCleanup();
+        return;
+      }
+      cleanup = listenerCleanup;
+    });
+
+    return () => {
+      disposed = true;
+      cleanup();
+    };
+  }, []);
 
   const handleLogoTap = () => {
     setLogoTapCount((count) => {
@@ -192,7 +255,7 @@ export default function App() {
       </main>
 
       <footer className="w-full text-center" style={{ marginTop: 'auto', paddingTop: '2rem', paddingBottom: '1rem', borderTop: '1px solid var(--border-subtle)' }}>
-        <p className="text-xs text-muted">© ২০২৬ হিসাব রক্ষক। তৈরি করেছে সুজিৎ বিশ্বাস</p>
+        <p className="text-xs text-muted">© ২০২৬ হিসাব রক্ষক - আপনার লোন ও সুদের বিশ্বস্ত হিসাবসাথী। নির্মাতা: সুজিৎ বিশ্বাস</p>
       </footer>
 
       {isAddingLoan && (

@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
+import { TransformComponent, TransformWrapper } from 'react-zoom-pan-pinch';
 import { compressImage } from '../utils/imageCompression';
 import DocumentCropModal from './DocumentCropModal';
 
@@ -17,6 +18,7 @@ export default function AddLoanForm({ onSave, onCancel }) {
   const [isProcessingImage, setIsProcessingImage] = useState(false);
   const [cropSource, setCropSource] = useState(null);
   const [cropSourceName, setCropSourceName] = useState('proof-image.png');
+  const [isPreviewViewerOpen, setIsPreviewViewerOpen] = useState(false);
   const cameraInputRef = useRef(null);
   const galleryInputRef = useRef(null);
 
@@ -211,8 +213,17 @@ export default function AddLoanForm({ onSave, onCancel }) {
                 <img
                   src={proofImage.dataUrl}
                   alt="Proof preview"
-                  className="proof-preview-image"
+                  className="proof-preview-image clickable-proof-image"
+                  onClick={() => setIsPreviewViewerOpen(true)}
                 />
+                <button
+                  type="button"
+                  className="btn btn-secondary btn-sm"
+                  onClick={() => setIsPreviewViewerOpen(true)}
+                  style={{ marginTop: '0.75rem' }}
+                >
+                  ছবি বড় করে দেখুন
+                </button>
                 <button
                   type="button"
                   className="btn btn-danger btn-sm"
@@ -242,6 +253,59 @@ export default function AddLoanForm({ onSave, onCancel }) {
           onConfirm={handleCropConfirm}
           isProcessing={isProcessingImage}
         />
+      )}
+
+      {isPreviewViewerOpen && proofImage?.dataUrl && (
+        <div className="modal-overlay image-viewer-overlay" onClick={() => setIsPreviewViewerOpen(false)}>
+          <div className="image-viewer-shell" onClick={(event) => event.stopPropagation()}>
+            <div className="image-viewer-toolbar">
+              <h3 className="text-base font-bold text-pure">ডকুমেন্ট প্রিভিউ</h3>
+              <button
+                type="button"
+                className="image-viewer-close"
+                onClick={() => setIsPreviewViewerOpen(false)}
+              >
+                &times;
+              </button>
+            </div>
+
+            <TransformWrapper
+              minScale={1}
+              maxScale={6}
+              initialScale={1}
+              wheel={{ step: 0.2 }}
+              pinch={{ step: 5 }}
+              doubleClick={{ mode: 'toggle', step: 1.4 }}
+              panning={{ velocityDisabled: true }}
+            >
+              {({ zoomIn, zoomOut, resetTransform }) => (
+                <>
+                  <div className="image-viewer-actions">
+                    <button type="button" className="btn btn-secondary btn-sm" onClick={() => zoomOut()}>
+                      -
+                    </button>
+                    <button type="button" className="btn btn-secondary btn-sm" onClick={() => resetTransform()}>
+                      Reset
+                    </button>
+                    <button type="button" className="btn btn-secondary btn-sm" onClick={() => zoomIn()}>
+                      +
+                    </button>
+                  </div>
+                  <TransformComponent
+                    wrapperClass="image-viewer-transform-wrapper"
+                    contentClass="image-viewer-transform-content"
+                  >
+                    <img
+                      src={proofImage.dataUrl}
+                      alt="Proof preview zoomed"
+                      className="image-viewer-image"
+                    />
+                  </TransformComponent>
+                </>
+              )}
+            </TransformWrapper>
+          </div>
+        </div>
       )}
     </div>
   );

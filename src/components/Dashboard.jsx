@@ -102,14 +102,14 @@ export default function Dashboard({ loans, onPaymentClick, onSettleClick, onDele
         </div>
         
         <div className="summary-grid" style={{ padding: '1rem 1.25rem 1.25rem' }}>
-          <div className="stat-box">
+          <div className="stat-box stat-box-principal">
             <span className="text-xs text-muted">বাজারে দেওয়া মোট আসল</span>
             <div className="stat-value text-gradient" style={{color: 'var(--color-warning)'}}>
                 {totalActivePrincipal.toLocaleString('bn-BD')} 
                 <span className="stat-currency">৳</span>
             </div>
           </div>
-          <div className="stat-box" style={{ position: 'relative' }}>
+          <div className="stat-box stat-box-profit" style={{ position: 'relative' }}>
             <span className="text-xs text-muted">
                {banglaMonths[selectedMonth]} মাসের লাভ
             </span>
@@ -119,7 +119,7 @@ export default function Dashboard({ loans, onPaymentClick, onSettleClick, onDele
             </div>
             
             {/* Show all time total subtly beneath */}
-            <div className="text-xs text-muted" style={{ marginTop: '0.75rem', opacity: 0.8, borderTop: '1px solid var(--border-subtle)', paddingTop: '0.5rem' }}>
+            <div className="text-xs text-muted stat-total-income" style={{ marginTop: '0.75rem', opacity: 0.8, borderTop: '1px solid var(--border-subtle)', paddingTop: '0.5rem' }}>
                সর্বমোট আয়: <span className="font-bold">{totalInterestCollected.toLocaleString('bn-BD')} ৳</span>
             </div>
           </div>

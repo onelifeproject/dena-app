@@ -16,8 +16,10 @@ There is no backend API. All business data is stored in browser/app `localStorag
 
 - Frontend: React 19, Vite 8
 - Native shell: Capacitor 8 (`@capacitor/core`, `@capacitor/android`)
+- Native app lifecycle: `@capacitor/app` (Android back-button interception)
 - Date input: `react-datepicker`
 - Image handling: `react-image-crop`, `react-easy-crop`
+- Image zoom/pan viewer: `react-zoom-pan-pinch`
 - Linting: ESLint flat config
 - CI: GitHub Actions builds signed Android release APK
 
@@ -102,6 +104,28 @@ Payment entry:
 - Loan cards are tappable and open `LoanDetailsModal`.
 - Proof image upload is optional and never blocks loan creation.
 - Proof download from details modal is exported as JPG (client-side conversion).
+- On native Android, back swipe/button now closes open overlays first (details > delete > payment > add-loan), then exits only if no overlay is open.
+- Proof download in details modal now performs direct file save (no share sheet) to `Documents/Dena/`.
+- Both details modal and add-loan image preview support full-screen image viewer with pinch zoom, pan, double-tap zoom, and reset controls.
+- Settled (`DONE`) loan cards intentionally show only delete action (no close/settle action).
+- Loan cards and summary stat cards have status-based glow styles and animated lighting sweep.
+- Mobile tap/press feedback is tuned to stay clipped inside rounded corners and avoid full-card false press feedback when tapping action buttons.
+
+## Recent Change Log (2026-04)
+
+- Added Android-native back-button handling through `@capacitor/app`.
+- Added direct JPG proof save path `Documents/Dena/<loan>-proof-<timestamp>.jpg` for native platform.
+- Added image viewer modal interactions in:
+  - `src/components/LoanDetailsModal.jsx`
+  - `src/components/AddLoanForm.jsx`
+- Updated loan-card action behavior:
+  - `ACTIVE`: interest + settle + delete
+  - `DONE`: delete only
+- Added enhanced visual system:
+  - active vs done edge highlights on cards
+  - animated sweep/light pass on loan cards
+  - highlighted summary stat cards
+  - unified touch press states for rounded buttons/tabs
 
 ## Commands
 

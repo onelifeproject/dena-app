@@ -1,6 +1,7 @@
+import { useState } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { Directory, Filesystem } from '@capacitor/filesystem';
-import { Share } from '@capacitor/share';
+import { TransformComponent, TransformWrapper } from 'react-zoom-pan-pinch';
 
 const banglaDays = ['রবিবার', 'সোমবার', 'মঙ্গলবার', 'বুধবার', 'বৃহস্পতিবার', 'শুক্রবার', 'শনিবার'];
 
@@ -12,56 +13,63 @@ const formatBnDate = (isoString) => {
 const toBnAmount = (amount) => Number(amount).toLocaleString('bn-BD');
 
 export default function LoanDetailsModal({ loan, onClose }) {
+  const [isImageViewerOpen, setIsImageViewerOpen] = useState(false);
+
   if (!loan) return null;
-  const fileName = `${loan.name || 'loan'}-proof.jpg`.replace(/\s+/g, '-');
+  const safeLoanName = `${loan.name || 'loan'}`
+    .trim()
+    .replace(/[^\w\s-]/g, '')
+    .replace(/\s+/g, '-')
+    .toLowerCase();
+  const fileName = `${safeLoanName || 'loan'}-proof-${Date.now()}.jpg`;
 
   const handleJpgDownload = async () => {
     if (!loan.proofImage?.dataUrl) return;
 
-    const image = new Image();
-    image.src = loan.proofImage.dataUrl;
+    try {
+      const image = new Image();
+      image.src = loan.proofImage.dataUrl;
 
-    await new Promise((resolve, reject) => {
-      image.onload = resolve;
-      image.onerror = reject;
-    });
-
-    const canvas = document.createElement('canvas');
-    canvas.width = image.width;
-    canvas.height = image.height;
-    const context = canvas.getContext('2d');
-    if (!context) return;
-
-    context.fillStyle = '#ffffff';
-    context.fillRect(0, 0, canvas.width, canvas.height);
-    context.drawImage(image, 0, 0);
-
-    const jpgDataUrl = canvas.toDataURL('image/jpeg', 0.92);
-    const base64Data = jpgDataUrl.split(',')[1];
-
-    if (Capacitor.isNativePlatform()) {
-      const filePath = `proof-${Date.now()}-${fileName}`;
-      const { uri } = await Filesystem.writeFile({
-        path: filePath,
-        data: base64Data,
-        directory: Directory.Cache,
+      await new Promise((resolve, reject) => {
+        image.onload = resolve;
+        image.onerror = reject;
       });
 
-      await Share.share({
-        title: 'ডকুমেন্ট প্রুফ',
-        text: 'প্রুফ ছবি সেভ/শেয়ার করুন',
-        url: uri,
-        dialogTitle: 'ছবি ডাউনলোড করুন',
-      });
-      return;
+      const canvas = document.createElement('canvas');
+      canvas.width = image.width;
+      canvas.height = image.height;
+      const context = canvas.getContext('2d');
+      if (!context) throw new Error('ক্যানভাস পাওয়া যায়নি।');
+
+      context.fillStyle = '#ffffff';
+      context.fillRect(0, 0, canvas.width, canvas.height);
+      context.drawImage(image, 0, 0);
+
+      const jpgDataUrl = canvas.toDataURL('image/jpeg', 0.92);
+      const base64Data = jpgDataUrl.split(',')[1];
+
+      if (Capacitor.isNativePlatform()) {
+        const targetPath = `Dena/${fileName}`;
+        await Filesystem.writeFile({
+          path: targetPath,
+          data: base64Data,
+          directory: Directory.Documents,
+          recursive: true,
+        });
+        window.alert(`ছবি সেভ হয়েছে: Documents/Dena/${fileName}`);
+        return;
+      }
+
+      const link = document.createElement('a');
+      link.href = jpgDataUrl;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (error) {
+      console.error('Proof download failed:', error);
+      window.alert('ছবি সেভ করা যায়নি। আবার চেষ্টা করুন।');
     }
-
-    const link = document.createElement('a');
-    link.href = jpgDataUrl;
-    link.download = fileName;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
   };
 
   return (
@@ -117,7 +125,19 @@ export default function LoanDetailsModal({ loan, onClose }) {
           <h3 className="text-base font-bold mb-2">ডকুমেন্ট প্রুফ</h3>
           {loan.proofImage?.dataUrl ? (
             <>
-              <img src={loan.proofImage.dataUrl} alt={`${loan.name} proof`} className="loan-proof-image" />
+              <img
+                src={loan.proofImage.dataUrl}
+                alt={`${loan.name} proof`}
+                className="loan-proof-image clickable-proof-image"
+                onClick={() => setIsImageViewerOpen(true)}
+              />
+              <button
+                type="button"
+                className="btn btn-secondary btn-sm mt-4"
+                onClick={() => setIsImageViewerOpen(true)}
+              >
+                ছবি বড় করে দেখুন
+              </button>
               <div className="mt-4">
                 <button
                   type="button"
@@ -151,6 +171,65 @@ export default function LoanDetailsModal({ loan, onClose }) {
           )}
         </div>
       </div>
+
+      {isImageViewerOpen && loan.proofImage?.dataUrl && (
+        <div
+          className="modal-overlay image-viewer-overlay"
+          onClick={(event) => {
+            event.stopPropagation();
+            setIsImageViewerOpen(false);
+          }}
+        >
+          <div className="image-viewer-shell" onClick={(event) => event.stopPropagation()}>
+            <div className="image-viewer-toolbar">
+              <h3 className="text-base font-bold text-pure">ডকুমেন্ট প্রিভিউ</h3>
+              <button
+                type="button"
+                className="image-viewer-close"
+                onClick={() => setIsImageViewerOpen(false)}
+              >
+                &times;
+              </button>
+            </div>
+
+            <TransformWrapper
+              minScale={1}
+              maxScale={6}
+              initialScale={1}
+              wheel={{ step: 0.2 }}
+              pinch={{ step: 5 }}
+              doubleClick={{ mode: 'toggle', step: 1.4 }}
+              panning={{ velocityDisabled: true }}
+            >
+              {({ zoomIn, zoomOut, resetTransform }) => (
+                <>
+                  <div className="image-viewer-actions">
+                    <button type="button" className="btn btn-secondary btn-sm" onClick={() => zoomOut()}>
+                      -
+                    </button>
+                    <button type="button" className="btn btn-secondary btn-sm" onClick={() => resetTransform()}>
+                      Reset
+                    </button>
+                    <button type="button" className="btn btn-secondary btn-sm" onClick={() => zoomIn()}>
+                      +
+                    </button>
+                  </div>
+                  <TransformComponent
+                    wrapperClass="image-viewer-transform-wrapper"
+                    contentClass="image-viewer-transform-content"
+                  >
+                    <img
+                      src={loan.proofImage.dataUrl}
+                      alt={`${loan.name} proof zoomed`}
+                      className="image-viewer-image"
+                    />
+                  </TransformComponent>
+                </>
+              )}
+            </TransformWrapper>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

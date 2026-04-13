@@ -98,18 +98,23 @@ Pattern used:
 - `LoanCard.jsx`
   - Renders each loan
   - Overdue highlighting and Bengali date/day text
-  - Actions: interest payment, settlement, delete
+  - Actions:
+    - `ACTIVE`: interest payment + settlement + delete
+    - `DONE`: delete only
   - Card tap opens full details modal
 - `LoanDetailsModal.jsx`
   - Shows full loan details and payment history
   - Shows optional proof image
   - Supports proof download as JPG
+  - Native save target is `Documents/Dena/` (no share sheet flow)
+  - Includes full-screen image viewer with pinch zoom/pan/reset
 - `AddLoanForm.jsx`
   - Captures new loan fields
   - Auto-suggests weekly interest = `Math.floor(principal * 0.1)`
   - Converts chosen date into Dhaka timezone date string (`YYYY-MM-DD`) before save
   - Supports optional proof image from camera/gallery
   - Opens `DocumentCropModal` before final save
+  - Includes full-screen zoomable preview for uploaded/cropped proof image
 - `PaymentModal.jsx`
   - Supports partial mode (weekly interest) and full-settlement mode
 - `DeleteModal.jsx`
@@ -159,6 +164,16 @@ Build logic:
 - Sync Capacitor assets/plugins into Android project
 - Compile APK via Gradle
 
+Android interaction behavior:
+
+- `@capacitor/app` back-button listener is registered in `App.jsx`.
+- Back priority closes overlays in this order:
+  1. loan details modal
+  2. delete modal
+  3. payment modal
+  4. add-loan modal
+- Only when no modal is open, app falls back to navigation/back exit flow.
+
 CI automation:
 
 - `.github/workflows/build-android.yml` builds signed release APK and uploads artifact `Dena-Android-v<versionName>-<versionCode>`.
@@ -167,8 +182,10 @@ CI automation:
 
 - Google Fonts from `fonts.googleapis.com` and `fonts.gstatic.com`
 - Capacitor native runtime
+- Capacitor App plugin (`@capacitor/app`) for native back button events
 - `react-image-crop` for document-proof cropping UX
 - `react-easy-crop` (installed dependency for image handling stack)
+- `react-zoom-pan-pinch` for touch-first full-screen image viewing
 - No remote API integrations in current code
 - Optional Google Services plugin in Gradle if `google-services.json` exists
 
@@ -187,6 +204,13 @@ CI automation:
 - `getLoans()` has no safe recovery for corrupted localStorage
 - Random ID generation without collision guard
 - Schema versioning/migrations not implemented
+
+## 14) Recent UX/Styling Updates (2026-04)
+
+- Added status-specific glow and animated sweep effects for loan cards.
+- Added highlighted summary stat cards (principal/profit emphasis).
+- Refined mobile tap behavior so rounded buttons and tabs keep press effects clipped inside shape.
+- Reduced mobile false-hover artifacts on touch devices (coarse pointer media queries).
 
 ## 12) Safe Change Checklist
 

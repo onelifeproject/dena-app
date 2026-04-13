@@ -21,7 +21,7 @@ export default function LoanCard({ loan, onPaymentClick, onSettleClick, onDelete
 
   return (
     <div
-      className={`glass-card loan-card-container clickable-loan-card ${isOverdue && loan.status === 'ACTIVE' ? 'overdue-alert' : ''}`}
+      className={`glass-card loan-card-container clickable-loan-card ${loan.status === 'ACTIVE' ? 'active-loan-highlight' : 'done-loan-highlight'} ${isOverdue && loan.status === 'ACTIVE' ? 'overdue-alert' : ''}`}
       role="button"
       tabIndex={0}
       onClick={() => onOpenDetails(loan)}
@@ -111,20 +111,27 @@ export default function LoanCard({ loan, onPaymentClick, onSettleClick, onDelete
                 >
                   পরিশোধ
                </button>
+              <button 
+                className="btn btn-danger compact-btn delete-btn" 
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onDeleteClick();
+                }}
+              >
+                মুছে ফেলুন
+              </button>
            </>
         ) : (
-            <span className="badge badge-done flex-1 text-center" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>বন্ধ</span>
+          <button 
+            className="btn btn-danger compact-btn delete-btn" 
+            onClick={(event) => {
+              event.stopPropagation();
+              onDeleteClick();
+            }}
+          >
+            মুছে ফেলুন
+          </button>
         )}
-        
-        <button 
-           className="btn btn-danger compact-btn" 
-           onClick={(event) => {
-             event.stopPropagation();
-             onDeleteClick();
-           }}
-        >
-          মুছে ফেলুন
-        </button>
       </div>
     </div>
   );
