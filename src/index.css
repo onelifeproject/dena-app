@@ -1167,3 +1167,109 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
   }
 }
 
+.dashboard-actions-row {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.65rem;
+  margin: 0 0.5rem 1rem;
+  flex-wrap: wrap;
+}
+
+.lock-screen-overlay {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background:
+    radial-gradient(circle at 20% 20%, rgba(139, 92, 246, 0.12), transparent 40%),
+    radial-gradient(circle at 85% 25%, rgba(59, 130, 246, 0.12), transparent 40%),
+    var(--bg-deep);
+}
+
+.lock-screen-card {
+  width: min(100%, 440px);
+  padding: 1.25rem;
+  border-color: var(--border-glow);
+}
+
+.lock-pin-input {
+  text-align: center;
+  letter-spacing: 0.45rem;
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.lock-hint-row {
+  margin-top: 1rem;
+  padding-top: 0.9rem;
+  border-top: 1px solid var(--border-subtle);
+  display: flex;
+  justify-content: space-between;
+  color: var(--text-muted);
+  font-size: 0.86rem;
+}
+
+.security-modal {
+  max-width: 680px;
+}
+
+.security-setting-list {
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.02);
+  padding: 0.6rem 0.85rem;
+}
+
+.security-setting-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.55rem 0;
+  color: var(--text-secondary);
+}
+
+.security-setting-item + .security-setting-item {
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.security-setting-item input[type='checkbox'] {
+  accent-color: var(--brand-primary);
+  width: 1.1rem;
+  height: 1.1rem;
+}
+
+.security-setting-select {
+  align-items: flex-start;
+  flex-direction: column;
+}
+
+.security-setting-select .form-input {
+  width: 100%;
+  margin-top: 0.4rem;
+  padding: 0.85rem 1rem;
+  font-size: 1rem;
+}
+
+.security-pin-block {
+  margin-top: 1rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: rgba(139, 92, 246, 0.06);
+  padding: 0.9rem;
+}
+
+.security-pin-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.6rem;
+  margin-top: 0.8rem;
+}
+
+@media (max-width: 640px) {
+  .security-pin-grid {
+    grid-template-columns: 1fr;
+  }
+}
+

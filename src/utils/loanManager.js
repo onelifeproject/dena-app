@@ -1,12 +1,13 @@
+import { readStoredLoansRaw, saveStoredLoansRaw } from './securityManager';
+
 export const generateId = () => Math.random().toString(36).substr(2, 9);
 
 export const getLoans = () => {
-  const data = localStorage.getItem('usuryLoans');
-  return data ? JSON.parse(data) : [];
+  return readStoredLoansRaw();
 };
 
 export const saveLoans = (loans) => {
-  localStorage.setItem('usuryLoans', JSON.stringify(loans));
+  saveStoredLoansRaw(loans);
 };
 
 export const addLoan = (loanData) => {

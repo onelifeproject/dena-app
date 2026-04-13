@@ -10,7 +10,15 @@ const banglaMonths = [
 // Helper to reliably translate years without thousand separators locally
 const toBnYear = (year) => Number(year).toLocaleString('bn-BD', { useGrouping: false });
 
-export default function Dashboard({ loans, onPaymentClick, onSettleClick, onDeleteClick, onAddNewClick, onLoanSelect }) {
+export default function Dashboard({
+  loans,
+  onPaymentClick,
+  onSettleClick,
+  onDeleteClick,
+  onAddNewClick,
+  onLoanSelect,
+  onOpenSecurity,
+}) {
   const [activeTab, setActiveTab] = useState('ACTIVE'); // ACTIVE or DONE
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
@@ -145,13 +153,16 @@ export default function Dashboard({ loans, onPaymentClick, onSettleClick, onDele
          <h2 className="section-title">{activeTab === 'ACTIVE' ? 'সক্রিয় গ্রাহক' : 'সম্পূর্ণ হওয়া হিসাব'}</h2>
       </div>
       
-      {activeTab === 'ACTIVE' && (
-        <div className="flex justify-end mb-4 px-2">
-            <button onClick={onAddNewClick} className="btn btn-primary w-full-mobile shadow-glow">
-               <span className="mr-1">+</span> নতুন হিসাব
-            </button>
-        </div>
-      )}
+      <div className="dashboard-actions-row">
+        {activeTab === 'ACTIVE' && (
+          <button onClick={onAddNewClick} className="btn btn-primary w-full-mobile shadow-glow">
+            <span className="mr-1">+</span> নতুন হিসাব
+          </button>
+        )}
+        <button type="button" onClick={onOpenSecurity} className="btn btn-secondary w-full-mobile">
+          নিরাপত্তা সেটিংস
+        </button>
+      </div>
 
       <div className="flex flex-col gap-4">
         {displayedLoans.length === 0 ? (
