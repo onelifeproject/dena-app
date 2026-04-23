@@ -1096,6 +1096,19 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
   word-break: break-word;
 }
 
+.restore-confirm-modal {
+  max-width: 520px;
+}
+
+.restore-confirm-text {
+  line-height: 1.5;
+}
+
+.restore-file-name {
+  margin-top: 0.6rem;
+  word-break: break-word;
+}
+
 .crop-modal-content {
   max-width: 680px;
 }
@@ -1228,6 +1241,12 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
   .settings-status-text {
     font-size: 0.78rem;
     line-height: 1.45;
+  }
+
+  .restore-confirm-modal {
+    max-width: 100%;
+    width: 100%;
+    padding: 1.35rem 1rem 1.2rem 1rem;
   }
 }
 

@@ -26,6 +26,8 @@ export default function App() {
   const [loans, setLoans] = useState(() => getLoans());
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [settingsStatus, setSettingsStatus] = useState('');
+  const [pendingRestoreLoans, setPendingRestoreLoans] = useState(null);
+  const [pendingRestoreFileName, setPendingRestoreFileName] = useState('');
   const [isAddingLoan, setIsAddingLoan] = useState(false);
   const [editingLoanId, setEditingLoanId] = useState(null);
   const [activePaymentModal, setActivePaymentModal] = useState({ show: false, loan: null, isSettle: false });
@@ -36,6 +38,7 @@ export default function App() {
   const [logoTapCount, setLogoTapCount] = useState(0);
   const restoreFileInputRef = useRef(null);
   const isSettingsOpenRef = useRef(isSettingsOpen);
+  const pendingRestoreLoansRef = useRef(pendingRestoreLoans);
   const isAddingLoanRef = useRef(isAddingLoan);
   const isEditingLoanRef = useRef(Boolean(editingLoanId));
   const isPaymentModalOpenRef = useRef(activePaymentModal.show);
@@ -44,12 +47,13 @@ export default function App() {
 
   useEffect(() => {
     isSettingsOpenRef.current = isSettingsOpen;
+    pendingRestoreLoansRef.current = pendingRestoreLoans;
     isAddingLoanRef.current = isAddingLoan;
     isEditingLoanRef.current = Boolean(editingLoanId);
     isPaymentModalOpenRef.current = activePaymentModal.show;
     isDeleteModalOpenRef.current = activeDeleteModal.show;
     activeLoanDetailsIdRef.current = activeLoanDetailsId;
-  }, [activeDeleteModal.show, activeLoanDetailsId, activePaymentModal.show, editingLoanId, isAddingLoan, isSettingsOpen]);
+  }, [activeDeleteModal.show, activeLoanDetailsId, activePaymentModal.show, editingLoanId, isAddingLoan, isSettingsOpen, pendingRestoreLoans]);
 
   useEffect(() => {
     const setupSystemBars = async () => {
@@ -113,6 +117,12 @@ export default function App() {
 
         if (isSettingsOpenRef.current) {
           setIsSettingsOpen(false);
+          return;
+        }
+
+        if (pendingRestoreLoansRef.current) {
+          setPendingRestoreLoans(null);
+          setPendingRestoreFileName('');
           return;
         }
 
@@ -297,20 +307,30 @@ export default function App() {
     try {
       const text = await file.text();
       const restoredLoans = parseRestoreContent(text);
-      if (!window.confirm('ব্যাকআপ ফিরিয়ে আনলে বর্তমান সব হিসাব বদলে যাবে। চালিয়ে যাবেন?')) {
-        return;
-      }
-      saveLoans(restoredLoans);
-      setLoans(getLoans());
-      setActiveLoanDetailsId(null);
-      setEditingLoanId(null);
-      setActivePaymentModal({ show: false, loan: null, isSettle: false });
-      setActiveDeleteModal({ show: false, loan: null });
-      setSettingsStatus(`ব্যাকআপ ফিরিয়ে আনা সম্পন্ন: ${file.name}`);
+      setPendingRestoreLoans(restoredLoans);
+      setPendingRestoreFileName(file.name);
     } catch (error) {
       console.error('Restore failed:', error);
       setSettingsStatus('ব্যাকআপ ফিরিয়ে আনা যায়নি। সঠিক ব্যাকআপ ফাইল দিন।');
     }
+  };
+
+  const handleRestoreConfirm = () => {
+    if (!pendingRestoreLoans) return;
+    saveLoans(pendingRestoreLoans);
+    setLoans(getLoans());
+    setActiveLoanDetailsId(null);
+    setEditingLoanId(null);
+    setActivePaymentModal({ show: false, loan: null, isSettle: false });
+    setActiveDeleteModal({ show: false, loan: null });
+    setPendingRestoreLoans(null);
+    setPendingRestoreFileName('');
+    setSettingsStatus(`ব্যাকআপ ফিরিয়ে আনা সম্পন্ন: ${pendingRestoreFileName}`);
+  };
+
+  const handleRestoreCancel = () => {
+    setPendingRestoreLoans(null);
+    setPendingRestoreFileName('');
   };
 
   return (
@@ -475,6 +495,28 @@ export default function App() {
             {settingsStatus && (
               <p className="text-xs text-muted settings-status-text">{settingsStatus}</p>
             )}
+          </div>
+        </div>
+      )}
+
+      {pendingRestoreLoans && (
+        <div className="modal-overlay" onClick={handleRestoreCancel}>
+          <div className="modal-content restore-confirm-modal" onClick={(event) => event.stopPropagation()}>
+            <h2 className="text-xl font-bold text-brand-gradient mb-4">ব্যাকআপ নিশ্চিত করুন</h2>
+            <p className="text-sm text-secondary restore-confirm-text">
+              ব্যাকআপ ফিরিয়ে আনলে বর্তমান সব হিসাব বদলে যাবে। আপনি কি চালিয়ে যেতে চান?
+            </p>
+            {pendingRestoreFileName && (
+              <p className="text-xs text-muted restore-file-name">ফাইল: {pendingRestoreFileName}</p>
+            )}
+            <div className="flex gap-3 mt-6 mobile-btn-stack">
+              <button type="button" className="btn btn-secondary" onClick={handleRestoreCancel}>
+                বাতিল
+              </button>
+              <button type="button" className="btn btn-primary" onClick={handleRestoreConfirm}>
+                নিশ্চিত করুন
+              </button>
+            </div>
           </div>
         </div>
       )}
