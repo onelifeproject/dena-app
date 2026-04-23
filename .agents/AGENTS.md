@@ -4,7 +4,7 @@ This file is the first-stop context for any LLM agent working in this repository
 
 ## Project Purpose
 
-`usury-app` is a React + Vite single-page app for tracking weekly-interest loans in Bengali.
+`usury-app` is a React + Vite single-page app for tracking interval-based interest loans in Bengali.
 It runs as:
 
 - a web app in browser, and
@@ -71,6 +71,10 @@ Loan object (stored in `usuryLoans` array):
 - `nextPaymentDate`: ISO datetime string
 - `payments`: array of payment entries
 
+Settings value (stored separately):
+
+- `usuryProfitIntervalDays`: number (default `7`)
+
 Payment entry:
 
 - `date`: ISO datetime string
@@ -81,11 +85,14 @@ Payment entry:
 
 - New loan:
   - `status = ACTIVE`
-  - `nextPaymentDate = startDate + 7 days`
+  - `nextPaymentDate = startDate + configured interval days`
   - `payments = []`
 - Interest collection:
   - appends payment type `INTEREST`
-  - advances `nextPaymentDate` by +7 days from current `nextPaymentDate`
+  - advances `nextPaymentDate` by configured interval days from current `nextPaymentDate`
+- Interval update from Settings:
+  - saves `usuryProfitIntervalDays` (1-365, default 7)
+  - recalculates all `ACTIVE` loans' `nextPaymentDate` immediately
 - Full settlement:
   - appends payment type `SETTLEMENT`
   - sets `status = DONE`
@@ -110,6 +117,9 @@ Payment entry:
 - Settled (`DONE`) loan cards intentionally show only delete action (no close/settle action).
 - Loan cards and summary stat cards have status-based glow styles and animated lighting sweep.
 - Mobile tap/press feedback is tuned to stay clipped inside rounded corners and avoid full-card false press feedback when tapping action buttons.
+- Settings is a dedicated responsive modal (opened from footer-area settings button).
+- Settings includes backup, restore, profit interval control, and toggleable notification test options.
+- Restore uses in-app confirmation modal (not browser native `confirm`) for consistent responsive UI.
 
 ## Recent Change Log (2026-04)
 
@@ -126,6 +136,13 @@ Payment entry:
   - animated sweep/light pass on loan cards
   - highlighted summary stat cards
   - unified touch press states for rounded buttons/tabs
+- Added loan edit action from details modal (`LoanDetailsModal` -> `AddLoanForm` in edit mode).
+- Added responsive Settings modal with:
+  - Backup (`dena_YYYY-MM-DD_backup.json`)
+  - Restore
+  - Configurable profit interval days
+  - Notification test panel (moved from logo-tap easter egg)
+- Added immediate active-loan due-date recalculation when profit interval changes.
 
 ## Commands
 

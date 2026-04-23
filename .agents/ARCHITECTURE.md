@@ -27,6 +27,9 @@ Important: `getLoans()` assumes valid JSON and has no parse fallback, so malform
 `App.jsx` owns global app state:
 
 - `loans`: all loan records
+- `isSettingsOpen`: settings modal visibility
+- `isSettingsTestOpen`: settings test panel visibility
+- `profitIntervalDraft`: editable profit interval value in settings
 - `isAddingLoan`: controls add modal visibility
 - `activePaymentModal`: `{ show, loan, isSettle }`
 - `activeDeleteModal`: `{ show, loan }`
@@ -48,6 +51,7 @@ Pattern used:
 ### Storage key
 
 - Constant key used directly: `usuryLoans`
+- Settings key: `usuryProfitIntervalDays` (default `7`, bounded `1..365`)
 
 ### ID generation
 
@@ -57,7 +61,7 @@ Pattern used:
 ### Loan create logic
 
 - Input: `{ name, startDate, principal, interestPerWeek, proofImage? }`
-- Computes `nextPaymentDate` as start + 7 days
+- Computes `nextPaymentDate` as start + configured profit interval days
 - Creates loan:
   - `status: "ACTIVE"`
   - `payments: []`
@@ -73,8 +77,17 @@ Pattern used:
 - If settlement:
   - set `status = "DONE"`
 - Else:
-  - increment `nextPaymentDate` by 7 days
+  - increment `nextPaymentDate` by configured profit interval days
 - Saves and returns list.
+
+### Profit interval setting logic
+
+- `getProfitIntervalDays()` reads `usuryProfitIntervalDays` with fallback to `7`.
+- `saveProfitIntervalDays(days)` normalizes and persists value.
+- `applyProfitIntervalToActiveLoans(days)`:
+  - persists the new interval
+  - recalculates `nextPaymentDate` for all `ACTIVE` loans immediately
+  - uses last payment date (if present) or start date as recalculation anchor
 
 ### Delete logic
 
@@ -108,6 +121,7 @@ Pattern used:
   - Supports proof download as JPG
   - Native save target is `Documents/Dena/` (no share sheet flow)
   - Includes full-screen image viewer with pinch zoom/pan/reset
+  - Includes edit action button that opens add form in edit mode
 - `AddLoanForm.jsx`
   - Captures new loan fields
   - Auto-suggests weekly interest = `Math.floor(principal * 0.1)`
@@ -124,6 +138,8 @@ Pattern used:
   - Allows "use without crop" option
 - `LiveClock.jsx`
   - 1-second ticking Bengali date/time for `Asia/Dhaka`
+- `NotificationDebugPanel.jsx`
+  - now rendered inside Settings modal test section (not logo-tap trigger)
 
 ## 6) Timezone and Date Behavior
 
@@ -172,6 +188,8 @@ Android interaction behavior:
   2. delete modal
   3. payment modal
   4. add-loan modal
+  5. settings modal
+  6. restore confirmation modal
 - Only when no modal is open, app falls back to navigation/back exit flow.
 
 CI automation:
@@ -211,6 +229,8 @@ CI automation:
 - Added highlighted summary stat cards (principal/profit emphasis).
 - Refined mobile tap behavior so rounded buttons and tabs keep press effects clipped inside shape.
 - Reduced mobile false-hover artifacts on touch devices (coarse pointer media queries).
+- Added responsive Settings modal and custom restore confirm modal.
+- Added responsive safeguards for small-device buttons (including settings/test panels).
 
 ## 12) Safe Change Checklist
 
