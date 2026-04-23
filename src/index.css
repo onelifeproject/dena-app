@@ -1100,6 +1100,37 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
   align-items: start;
 }
 
+.settings-interval-card {
+  grid-column: 1 / -1;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  padding: 0.75rem;
+}
+
+.settings-interval-row {
+  margin-top: 0.55rem;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.settings-interval-input {
+  padding: 0.7rem 0.9rem;
+  font-size: 1rem;
+}
+
+.settings-interval-save-btn {
+  min-height: 2.6rem;
+  padding: 0.6rem 1rem;
+}
+
+.settings-interval-help {
+  margin-top: 0.5rem;
+  line-height: 1.45;
+}
+
 .settings-action-btn {
   width: 100%;
 }
@@ -1260,6 +1291,14 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
     grid-template-columns: 1fr;
   }
 
+  .settings-interval-row {
+    grid-template-columns: 1fr;
+  }
+
+  .settings-interval-save-btn {
+    width: 100%;
+  }
+
   .notification-debug-actions {
     grid-template-columns: 1fr;
   }
@@ -1288,6 +1327,21 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
     min-height: 2.55rem;
     font-size: 0.9rem;
     padding: 0.68rem 0.9rem;
+  }
+
+  .settings-interval-card {
+    padding: 0.68rem;
+    border-radius: 10px;
+  }
+
+  .settings-interval-input {
+    font-size: 0.92rem;
+    min-height: 2.4rem;
+  }
+
+  .settings-interval-save-btn {
+    min-height: 2.4rem;
+    font-size: 0.88rem;
   }
 
   .settings-status-text {

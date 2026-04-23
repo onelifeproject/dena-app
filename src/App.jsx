@@ -10,7 +10,17 @@ import DeleteModal from './components/DeleteModal';
 import LoanDetailsModal from './components/LoanDetailsModal';
 import LiveClock from './components/LiveClock';
 import NotificationDebugPanel from './components/NotificationDebugPanel';
-import { getLoans, saveLoans, addLoan, updateLoan, collectPayment, deleteLoan } from './utils/loanManager';
+import {
+  getLoans,
+  saveLoans,
+  addLoan,
+  updateLoan,
+  collectPayment,
+  deleteLoan,
+  getProfitIntervalDays,
+  saveProfitIntervalDays,
+  applyProfitIntervalToActiveLoans,
+} from './utils/loanManager';
 import {
   requestNotificationAccess,
   initializeNotificationChannel,
@@ -26,8 +36,10 @@ export default function App() {
   const [loans, setLoans] = useState(() => getLoans());
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isSettingsTestOpen, setIsSettingsTestOpen] = useState(false);
+  const [profitIntervalDraft, setProfitIntervalDraft] = useState(() => String(getProfitIntervalDays()));
   const [settingsStatus, setSettingsStatus] = useState('');
   const [pendingRestoreLoans, setPendingRestoreLoans] = useState(null);
+  const [pendingRestoreProfitIntervalDays, setPendingRestoreProfitIntervalDays] = useState(null);
   const [pendingRestoreFileName, setPendingRestoreFileName] = useState('');
   const [isAddingLoan, setIsAddingLoan] = useState(false);
   const [editingLoanId, setEditingLoanId] = useState(null);
@@ -116,6 +128,7 @@ export default function App() {
 
         if (pendingRestoreLoansRef.current) {
           setPendingRestoreLoans(null);
+          setPendingRestoreProfitIntervalDays(null);
           setPendingRestoreFileName('');
           return;
         }
@@ -244,6 +257,7 @@ export default function App() {
         app: 'Dena',
         version: 1,
         createdAt: new Date().toISOString(),
+        profitIntervalDays: getProfitIntervalDays(),
         loans,
       };
       const backupJson = JSON.stringify(backupPayload, null, 2);
@@ -277,8 +291,15 @@ export default function App() {
 
   const parseRestoreContent = (content) => {
     const parsed = JSON.parse(content);
-    if (Array.isArray(parsed)) return parsed;
-    if (Array.isArray(parsed?.loans)) return parsed.loans;
+    if (Array.isArray(parsed)) {
+      return { loans: parsed, profitIntervalDays: null };
+    }
+    if (Array.isArray(parsed?.loans)) {
+      return {
+        loans: parsed.loans,
+        profitIntervalDays: parsed.profitIntervalDays ?? null,
+      };
+    }
     throw new Error('অকার্যকর ব্যাকআপ ফরম্যাট');
   };
 
@@ -289,8 +310,9 @@ export default function App() {
 
     try {
       const text = await file.text();
-      const restoredLoans = parseRestoreContent(text);
-      setPendingRestoreLoans(restoredLoans);
+      const restoredData = parseRestoreContent(text);
+      setPendingRestoreLoans(restoredData.loans);
+      setPendingRestoreProfitIntervalDays(restoredData.profitIntervalDays);
       setPendingRestoreFileName(file.name);
     } catch (error) {
       console.error('Restore failed:', error);
@@ -301,19 +323,32 @@ export default function App() {
   const handleRestoreConfirm = () => {
     if (!pendingRestoreLoans) return;
     saveLoans(pendingRestoreLoans);
+    if (pendingRestoreProfitIntervalDays !== null && pendingRestoreProfitIntervalDays !== undefined) {
+      const appliedDays = saveProfitIntervalDays(pendingRestoreProfitIntervalDays);
+      setProfitIntervalDraft(String(appliedDays));
+    }
     setLoans(getLoans());
     setActiveLoanDetailsId(null);
     setEditingLoanId(null);
     setActivePaymentModal({ show: false, loan: null, isSettle: false });
     setActiveDeleteModal({ show: false, loan: null });
     setPendingRestoreLoans(null);
+    setPendingRestoreProfitIntervalDays(null);
     setPendingRestoreFileName('');
     setSettingsStatus(`ব্যাকআপ ফিরিয়ে আনা সম্পন্ন: ${pendingRestoreFileName}`);
   };
 
   const handleRestoreCancel = () => {
     setPendingRestoreLoans(null);
+    setPendingRestoreProfitIntervalDays(null);
     setPendingRestoreFileName('');
+  };
+
+  const handleSaveProfitInterval = () => {
+    const { intervalDays, loans: updatedLoans } = applyProfitIntervalToActiveLoans(profitIntervalDraft);
+    setLoans(updatedLoans);
+    setProfitIntervalDraft(String(intervalDays));
+    setSettingsStatus(`লাভ নেওয়ার ব্যবধান সেট করা হয়েছে: ${intervalDays} দিন (চলতি হিসাবেও আপডেট হয়েছে)`);
   };
 
   const closeSettingsModal = () => {
@@ -444,6 +479,30 @@ export default function App() {
             </div>
 
             <div className="settings-actions-wrap">
+              <div className="settings-interval-card">
+                <p className="text-sm font-semibold">লাভ নেওয়ার ব্যবধান (দিন)</p>
+                <div className="settings-interval-row">
+                  <input
+                    type="number"
+                    min="1"
+                    max="365"
+                    className="form-input settings-interval-input"
+                    value={profitIntervalDraft}
+                    onChange={(event) => setProfitIntervalDraft(event.target.value.replace(/[^\d]/g, ''))}
+                  />
+                  <button
+                    type="button"
+                    className="btn btn-primary settings-interval-save-btn"
+                    onClick={handleSaveProfitInterval}
+                  >
+                    দিন সেভ
+                  </button>
+                </div>
+                <p className="text-xs text-muted settings-interval-help">
+                  ডিফল্ট ৭ দিন। নতুন হিসাব ও পরের লাভ জমায় এই দিন অনুযায়ী তারিখ ধরা হবে।
+                </p>
+              </div>
+
               <button
                 type="button"
                 className="btn btn-primary settings-action-btn"
