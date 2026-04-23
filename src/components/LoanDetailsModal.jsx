@@ -77,10 +77,10 @@ export default function LoanDetailsModal({ loan, onClose, onEdit }) {
       <div className="modal-content loan-details-modal" onClick={(event) => event.stopPropagation()}>
         <div className="mb-6 flex justify-between items-center">
           <h2 className="text-2xl font-bold text-brand-gradient">হিসাবের বিস্তারিত</h2>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <div className="loan-details-header-actions">
             <button
               type="button"
-              className="btn btn-secondary btn-sm"
+              className="btn btn-secondary btn-sm loan-details-edit-btn"
               onClick={() => onEdit?.(loan)}
             >
               এডিট করুন
