@@ -378,6 +378,11 @@ h1, h2, h3, h4 {
   transform: translateZ(0);
   isolation: isolate;
   outline: none;
+  min-width: 0;
+  max-width: 100%;
+  line-height: 1.25;
+  text-align: center;
+  word-break: break-word;
 }
 
 .btn:active {
@@ -1367,6 +1372,18 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
 }
 
 @media (max-width: 360px) {
+  .btn {
+    padding: 0.62rem 0.78rem;
+    font-size: 0.84rem;
+    min-height: 2.2rem;
+  }
+
+  .btn-sm {
+    padding: 0.52rem 0.62rem;
+    font-size: 0.79rem;
+    min-height: 2.05rem;
+  }
+
   .settings-toggle-btn {
     font-size: 0.86rem;
     padding: 0.64rem 0.8rem;
