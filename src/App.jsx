@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { App as CapacitorApp } from '@capacitor/app';
+import { Directory, Filesystem } from '@capacitor/filesystem';
 import { StatusBar, Style } from '@capacitor/status-bar';
 import Dashboard from './components/Dashboard';
 import AddLoanForm from './components/AddLoanForm';
@@ -9,7 +10,7 @@ import DeleteModal from './components/DeleteModal';
 import LoanDetailsModal from './components/LoanDetailsModal';
 import LiveClock from './components/LiveClock';
 import NotificationDebugPanel from './components/NotificationDebugPanel';
-import { getLoans, addLoan, updateLoan, collectPayment, deleteLoan } from './utils/loanManager';
+import { getLoans, saveLoans, addLoan, updateLoan, collectPayment, deleteLoan } from './utils/loanManager';
 import {
   requestNotificationAccess,
   initializeNotificationChannel,
@@ -23,6 +24,8 @@ import {
 
 export default function App() {
   const [loans, setLoans] = useState(() => getLoans());
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [settingsStatus, setSettingsStatus] = useState('');
   const [isAddingLoan, setIsAddingLoan] = useState(false);
   const [editingLoanId, setEditingLoanId] = useState(null);
   const [activePaymentModal, setActivePaymentModal] = useState({ show: false, loan: null, isSettle: false });
@@ -31,6 +34,8 @@ export default function App() {
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   const [showNotificationDebug, setShowNotificationDebug] = useState(false);
   const [logoTapCount, setLogoTapCount] = useState(0);
+  const restoreFileInputRef = useRef(null);
+  const isSettingsOpenRef = useRef(isSettingsOpen);
   const isAddingLoanRef = useRef(isAddingLoan);
   const isEditingLoanRef = useRef(Boolean(editingLoanId));
   const isPaymentModalOpenRef = useRef(activePaymentModal.show);
@@ -38,12 +43,13 @@ export default function App() {
   const activeLoanDetailsIdRef = useRef(activeLoanDetailsId);
 
   useEffect(() => {
+    isSettingsOpenRef.current = isSettingsOpen;
     isAddingLoanRef.current = isAddingLoan;
     isEditingLoanRef.current = Boolean(editingLoanId);
     isPaymentModalOpenRef.current = activePaymentModal.show;
     isDeleteModalOpenRef.current = activeDeleteModal.show;
     activeLoanDetailsIdRef.current = activeLoanDetailsId;
-  }, [activeDeleteModal.show, activeLoanDetailsId, activePaymentModal.show, editingLoanId, isAddingLoan]);
+  }, [activeDeleteModal.show, activeLoanDetailsId, activePaymentModal.show, editingLoanId, isAddingLoan, isSettingsOpen]);
 
   useEffect(() => {
     const setupSystemBars = async () => {
@@ -102,6 +108,11 @@ export default function App() {
 
         if (isAddingLoanRef.current) {
           setIsAddingLoan(false);
+          return;
+        }
+
+        if (isSettingsOpenRef.current) {
+          setIsSettingsOpen(false);
           return;
         }
 
@@ -219,6 +230,89 @@ export default function App() {
     await clearDebugNotifications();
   };
 
+  const formatBackupFileName = () => {
+    const dateText = new Date().toISOString().slice(0, 10);
+    return `dena_${dateText}_backup.json`;
+  };
+
+  const toBase64 = (value) => {
+    const bytes = new TextEncoder().encode(value);
+    let binary = '';
+    bytes.forEach((byte) => {
+      binary += String.fromCharCode(byte);
+    });
+    return btoa(binary);
+  };
+
+  const handleBackup = async () => {
+    try {
+      const backupFileName = formatBackupFileName();
+      const backupPayload = {
+        app: 'Dena',
+        version: 1,
+        createdAt: new Date().toISOString(),
+        loans,
+      };
+      const backupJson = JSON.stringify(backupPayload, null, 2);
+
+      if (Capacitor.isNativePlatform()) {
+        await Filesystem.writeFile({
+          path: `Dena/${backupFileName}`,
+          data: toBase64(backupJson),
+          directory: Directory.Documents,
+          recursive: true,
+        });
+        setSettingsStatus(`ব্যাকআপ সম্পন্ন: Documents/Dena/${backupFileName}`);
+        return;
+      }
+
+      const blob = new Blob([backupJson], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = backupFileName;
+      document.body.appendChild(anchor);
+      anchor.click();
+      document.body.removeChild(anchor);
+      URL.revokeObjectURL(url);
+      setSettingsStatus(`ব্যাকআপ ডাউনলোড হয়েছে: ${backupFileName}`);
+    } catch (error) {
+      console.error('Backup failed:', error);
+      setSettingsStatus('ব্যাকআপ করা যায়নি। আবার চেষ্টা করুন।');
+    }
+  };
+
+  const parseRestoreContent = (content) => {
+    const parsed = JSON.parse(content);
+    if (Array.isArray(parsed)) return parsed;
+    if (Array.isArray(parsed?.loans)) return parsed.loans;
+    throw new Error('অকার্যকর ব্যাকআপ ফরম্যাট');
+  };
+
+  const handleRestoreFilePick = async (event) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) return;
+
+    try {
+      const text = await file.text();
+      const restoredLoans = parseRestoreContent(text);
+      if (!window.confirm('ব্যাকআপ ফিরিয়ে আনলে বর্তমান সব হিসাব বদলে যাবে। চালিয়ে যাবেন?')) {
+        return;
+      }
+      saveLoans(restoredLoans);
+      setLoans(getLoans());
+      setActiveLoanDetailsId(null);
+      setEditingLoanId(null);
+      setActivePaymentModal({ show: false, loan: null, isSettle: false });
+      setActiveDeleteModal({ show: false, loan: null });
+      setSettingsStatus(`ব্যাকআপ ফিরিয়ে আনা সম্পন্ন: ${file.name}`);
+    } catch (error) {
+      console.error('Restore failed:', error);
+      setSettingsStatus('ব্যাকআপ ফিরিয়ে আনা যায়নি। সঠিক ব্যাকআপ ফাইল দিন।');
+    }
+  };
+
   return (
     <div className="app-container" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       <header className="app-header">
@@ -271,6 +365,16 @@ export default function App() {
         )}
       </main>
 
+      <section className="settings-section" aria-label="সেটিংস খোলার অংশ">
+        <button
+          type="button"
+          className="btn btn-secondary w-full settings-toggle-btn"
+          onClick={() => setIsSettingsOpen(true)}
+        >
+          সেটিংস
+        </button>
+      </section>
+
       <footer className="w-full text-center" style={{ marginTop: 'auto', paddingTop: '2rem', paddingBottom: '1rem', borderTop: '1px solid var(--border-subtle)' }}>
         <p className="text-xs text-muted">© ২০২৬ হিসাব রক্ষক - আপনার লোন ও সুদের বিশ্বস্ত হিসাবসাথী। নির্মাতা: সুজিৎ বিশ্বাস</p>
       </footer>
@@ -317,6 +421,62 @@ export default function App() {
           }}
           onClose={() => setActiveLoanDetailsId(null)}
         />
+      )}
+
+      {isSettingsOpen && (
+        <div className="modal-overlay" onClick={() => setIsSettingsOpen(false)}>
+          <div
+            className="modal-content settings-modal-content"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="mb-6 flex justify-between items-center">
+              <h2 className="text-2xl font-bold text-brand-gradient">সেটিংস</h2>
+              <button
+                type="button"
+                onClick={() => setIsSettingsOpen(false)}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  color: 'var(--text-muted)',
+                  fontSize: '2rem',
+                  cursor: 'pointer',
+                  lineHeight: '1',
+                }}
+              >
+                &times;
+              </button>
+            </div>
+
+            <div className="settings-actions-wrap">
+              <button
+                type="button"
+                className="btn btn-primary settings-action-btn"
+                onClick={handleBackup}
+              >
+                ব্যাকআপ নিন
+              </button>
+              <button
+                type="button"
+                className="btn btn-secondary settings-action-btn"
+                onClick={() => restoreFileInputRef.current?.click()}
+              >
+                ব্যাকআপ ফিরিয়ে আনুন
+              </button>
+            </div>
+
+            <input
+              ref={restoreFileInputRef}
+              type="file"
+              accept="application/json,.json"
+              onChange={handleRestoreFilePick}
+              style={{ display: 'none' }}
+            />
+
+            {settingsStatus && (
+              <p className="text-xs text-muted settings-status-text">{settingsStatus}</p>
+            )}
+          </div>
+        </div>
       )}
     </div>
   );

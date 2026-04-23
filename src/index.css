@@ -1067,6 +1067,35 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
   background: rgba(0, 0, 0, 0.24);
 }
 
+.settings-section {
+  margin-top: 1.25rem;
+  margin-bottom: 0.75rem;
+}
+
+.settings-toggle-btn {
+  min-height: 2.7rem;
+}
+
+.settings-modal-content {
+  max-width: 560px;
+}
+
+.settings-actions-wrap {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.65rem;
+  align-items: start;
+}
+
+.settings-action-btn {
+  width: 100%;
+}
+
+.settings-status-text {
+  margin-top: 0.9rem;
+  word-break: break-word;
+}
+
 .crop-modal-content {
   max-width: 680px;
 }
@@ -1164,6 +1193,57 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
 
   .crop-action-wrap {
     flex-direction: column-reverse;
+  }
+
+  .settings-actions-wrap {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .settings-section {
+    margin-top: 0.9rem;
+    margin-bottom: 0.6rem;
+  }
+
+  .settings-toggle-btn {
+    min-height: 2.5rem;
+    font-size: 0.92rem;
+    padding: 0.7rem 1rem;
+  }
+
+  .settings-modal-content {
+    max-width: 100%;
+    width: 100%;
+    padding: 1.35rem 1rem 1.2rem 1rem;
+    border-radius: 18px 18px 0 0;
+  }
+
+  .settings-action-btn {
+    min-height: 2.55rem;
+    font-size: 0.9rem;
+    padding: 0.68rem 0.9rem;
+  }
+
+  .settings-status-text {
+    font-size: 0.78rem;
+    line-height: 1.45;
+  }
+}
+
+@media (max-width: 360px) {
+  .settings-toggle-btn {
+    font-size: 0.86rem;
+    padding: 0.64rem 0.8rem;
+  }
+
+  .settings-modal-content {
+    padding: 1.15rem 0.85rem 1rem 0.85rem;
+  }
+
+  .settings-action-btn {
+    font-size: 0.85rem;
+    min-height: 2.4rem;
   }
 }
 
