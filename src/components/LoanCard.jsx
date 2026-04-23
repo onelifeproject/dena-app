@@ -64,13 +64,19 @@ export default function LoanCard({ loan, onPaymentClick, onSettleClick, onDelete
                                   <span style={{ fontSize: '1.25rem', margin: '0 0.15rem' }}>{toBn(Math.abs(daysLeft))}</span> দিন হয়ে গেছে টাকা দেয়নি!
                                </span>
                             </>
-                         ) : (
-                            <>
-                               বাকি: <span className="font-bold" style={{ color: 'var(--color-success)', textShadow: '0 0 8px rgba(16, 185, 129, 0.6)' }}>
-                                  টাকা দিবে আর <span style={{ fontSize: '1.25rem', margin: '0 0.15rem' }}>{toBn(daysLeft)}</span> দিন পর
-                               </span>
-                            </>
-                         )}
+                        ) : (
+                           <>
+                              বাকি: <span className="font-bold" style={{ color: 'var(--color-success)', textShadow: '0 0 8px rgba(16, 185, 129, 0.6)' }}>
+                                 {daysLeft === 0 ? (
+                                    'আজকে টাকা দিবে'
+                                 ) : (
+                                    <>
+                                       টাকা দিবে আর <span style={{ fontSize: '1.25rem', margin: '0 0.15rem' }}>{toBn(daysLeft)}</span> দিন পর
+                                    </>
+                                 )}
+                              </span>
+                           </>
+                        )}
                      </p>
                  </>
              ) : (
