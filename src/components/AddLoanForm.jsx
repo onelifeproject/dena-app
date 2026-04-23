@@ -5,15 +5,29 @@ import { TransformComponent, TransformWrapper } from 'react-zoom-pan-pinch';
 import { compressImage } from '../utils/imageCompression';
 import DocumentCropModal from './DocumentCropModal';
 
-export default function AddLoanForm({ onSave, onCancel }) {
-  const [name, setName] = useState('');
+const parseLoanStartDate = (value) => {
+  if (!value) return new Date();
+  if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}/.test(value)) {
+    const [year, month, day] = value.slice(0, 10).split('-').map(Number);
+    return new Date(year, month - 1, day);
+  }
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? new Date() : date;
+};
+
+export default function AddLoanForm({ onSave, onCancel, initialLoan = null, mode = 'create' }) {
+  const [name, setName] = useState(initialLoan?.name || '');
   
   // Use pure JS date for DatePicker, we will format it exactly later on submit.
-  const [startDate, setStartDate] = useState(new Date());
+  const [startDate, setStartDate] = useState(parseLoanStartDate(initialLoan?.startDate));
   
-  const [principal, setPrincipal] = useState('');
-  const [interestPerWeek, setInterestPerWeek] = useState('');
-  const [proofImage, setProofImage] = useState(null);
+  const [principal, setPrincipal] = useState(initialLoan?.principal ? String(initialLoan.principal) : '');
+  const [interestPerWeek, setInterestPerWeek] = useState(
+    initialLoan?.interestPerWeek ? String(initialLoan.interestPerWeek) : ''
+  );
+  const [proofImage, setProofImage] = useState(initialLoan?.proofImage || null);
+  const isEditMode = mode === 'edit';
+
   const [imageError, setImageError] = useState('');
   const [isProcessingImage, setIsProcessingImage] = useState(false);
   const [cropSource, setCropSource] = useState(null);
@@ -93,7 +107,7 @@ export default function AddLoanForm({ onSave, onCancel }) {
     <div className="modal-overlay">
       <div className="modal-content">
         <div className="mb-6 flex justify-between items-center">
-            <h2 className="text-2xl font-bold text-brand-gradient">নতুন লোন দিন</h2>
+            <h2 className="text-2xl font-bold text-brand-gradient">{isEditMode ? 'হিসাব এডিট করুন' : 'নতুন লোন দিন'}</h2>
             <button onClick={onCancel} style={{background:'transparent', border:'none', color:'var(--text-muted)', fontSize:'2rem', cursor:'pointer', lineHeight: '1'}}>&times;</button>
         </div>
         
@@ -241,7 +255,7 @@ export default function AddLoanForm({ onSave, onCancel }) {
             className="btn btn-primary w-full text-lg shadow-glow"
             disabled={isProcessingImage}
           >
-             হিসাব সেভ করুন
+             {isEditMode ? 'হিসাব আপডেট করুন' : 'হিসাব সেভ করুন'}
           </button>
         </form>
       </div>

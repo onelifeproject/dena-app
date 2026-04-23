@@ -12,7 +12,7 @@ const formatBnDate = (isoString) => {
 
 const toBnAmount = (amount) => Number(amount).toLocaleString('bn-BD');
 
-export default function LoanDetailsModal({ loan, onClose }) {
+export default function LoanDetailsModal({ loan, onClose, onEdit }) {
   const [isImageViewerOpen, setIsImageViewerOpen] = useState(false);
 
   if (!loan) return null;
@@ -77,19 +77,28 @@ export default function LoanDetailsModal({ loan, onClose }) {
       <div className="modal-content loan-details-modal" onClick={(event) => event.stopPropagation()}>
         <div className="mb-6 flex justify-between items-center">
           <h2 className="text-2xl font-bold text-brand-gradient">হিসাবের বিস্তারিত</h2>
-          <button
-            onClick={onClose}
-            style={{
-              background: 'transparent',
-              border: 'none',
-              color: 'var(--text-muted)',
-              fontSize: '2rem',
-              cursor: 'pointer',
-              lineHeight: '1',
-            }}
-          >
-            &times;
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <button
+              type="button"
+              className="btn btn-secondary btn-sm"
+              onClick={() => onEdit?.(loan)}
+            >
+              এডিট করুন
+            </button>
+            <button
+              onClick={onClose}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: 'var(--text-muted)',
+                fontSize: '2rem',
+                cursor: 'pointer',
+                lineHeight: '1',
+              }}
+            >
+              &times;
+            </button>
+          </div>
         </div>
 
         <div className="loan-details-grid">

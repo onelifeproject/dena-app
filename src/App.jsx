@@ -9,7 +9,7 @@ import DeleteModal from './components/DeleteModal';
 import LoanDetailsModal from './components/LoanDetailsModal';
 import LiveClock from './components/LiveClock';
 import NotificationDebugPanel from './components/NotificationDebugPanel';
-import { getLoans, addLoan, collectPayment, deleteLoan } from './utils/loanManager';
+import { getLoans, addLoan, updateLoan, collectPayment, deleteLoan } from './utils/loanManager';
 import {
   requestNotificationAccess,
   initializeNotificationChannel,
@@ -24,6 +24,7 @@ import {
 export default function App() {
   const [loans, setLoans] = useState(() => getLoans());
   const [isAddingLoan, setIsAddingLoan] = useState(false);
+  const [editingLoanId, setEditingLoanId] = useState(null);
   const [activePaymentModal, setActivePaymentModal] = useState({ show: false, loan: null, isSettle: false });
   const [activeDeleteModal, setActiveDeleteModal] = useState({ show: false, loan: null });
   const [activeLoanDetailsId, setActiveLoanDetailsId] = useState(null);
@@ -31,16 +32,18 @@ export default function App() {
   const [showNotificationDebug, setShowNotificationDebug] = useState(false);
   const [logoTapCount, setLogoTapCount] = useState(0);
   const isAddingLoanRef = useRef(isAddingLoan);
+  const isEditingLoanRef = useRef(Boolean(editingLoanId));
   const isPaymentModalOpenRef = useRef(activePaymentModal.show);
   const isDeleteModalOpenRef = useRef(activeDeleteModal.show);
   const activeLoanDetailsIdRef = useRef(activeLoanDetailsId);
 
   useEffect(() => {
     isAddingLoanRef.current = isAddingLoan;
+    isEditingLoanRef.current = Boolean(editingLoanId);
     isPaymentModalOpenRef.current = activePaymentModal.show;
     isDeleteModalOpenRef.current = activeDeleteModal.show;
     activeLoanDetailsIdRef.current = activeLoanDetailsId;
-  }, [activeDeleteModal.show, activeLoanDetailsId, activePaymentModal.show, isAddingLoan]);
+  }, [activeDeleteModal.show, activeLoanDetailsId, activePaymentModal.show, editingLoanId, isAddingLoan]);
 
   useEffect(() => {
     const setupSystemBars = async () => {
@@ -102,6 +105,11 @@ export default function App() {
           return;
         }
 
+        if (isEditingLoanRef.current) {
+          setEditingLoanId(null);
+          return;
+        }
+
         if (canGoBack) {
           window.history.back();
           return;
@@ -146,6 +154,14 @@ export default function App() {
     setIsAddingLoan(false);
   };
 
+  const handleEditLoanSave = (loanData) => {
+    if (!editingLoanId) return;
+    const updatedLoans = updateLoan(editingLoanId, loanData);
+    setLoans(updatedLoans);
+    setEditingLoanId(null);
+    setActiveLoanDetailsId(editingLoanId);
+  };
+
   const handlePaymentClick = (loan) => {
     setActivePaymentModal({ show: true, loan, isSettle: false });
   };
@@ -174,6 +190,7 @@ export default function App() {
   };
 
   const activeLoanDetails = loans.find((loan) => loan.id === activeLoanDetailsId) || null;
+  const editingLoan = loans.find((loan) => loan.id === editingLoanId) || null;
 
   const handleDebugPermissionCheck = async () => {
     const allowed = await requestNotificationAccess();
@@ -265,6 +282,15 @@ export default function App() {
         />
       )}
 
+      {editingLoan && (
+        <AddLoanForm
+          mode="edit"
+          initialLoan={editingLoan}
+          onSave={handleEditLoanSave}
+          onCancel={() => setEditingLoanId(null)}
+        />
+      )}
+
       {activePaymentModal.show && (
         <PaymentModal 
           loan={activePaymentModal.loan}
@@ -285,6 +311,10 @@ export default function App() {
       {activeLoanDetails && (
         <LoanDetailsModal
           loan={activeLoanDetails}
+          onEdit={(loan) => {
+            setActiveLoanDetailsId(null);
+            setEditingLoanId(loan.id);
+          }}
           onClose={() => setActiveLoanDetailsId(null)}
         />
       )}

@@ -61,6 +61,25 @@ export const deleteLoan = (loanId) => {
   return getLoans();
 };
 
+export const updateLoan = (loanId, loanData) => {
+  const loans = getLoans();
+  const loanIndex = loans.findIndex((loan) => loan.id === loanId);
+
+  if (loanIndex > -1) {
+    loans[loanIndex] = {
+      ...loans[loanIndex],
+      name: loanData.name,
+      startDate: loanData.startDate,
+      principal: Number(loanData.principal),
+      interestPerWeek: Number(loanData.interestPerWeek),
+      proofImage: loanData.proofImage || null,
+    };
+    saveLoans(loans);
+  }
+
+  return getLoans();
+};
+
 export const calculateDaysLeft = (nextPaymentDateIso) => {
   const now = new Date();
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
