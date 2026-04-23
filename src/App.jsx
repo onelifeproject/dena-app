@@ -25,6 +25,7 @@ import {
 export default function App() {
   const [loans, setLoans] = useState(() => getLoans());
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isSettingsTestOpen, setIsSettingsTestOpen] = useState(false);
   const [settingsStatus, setSettingsStatus] = useState('');
   const [pendingRestoreLoans, setPendingRestoreLoans] = useState(null);
   const [pendingRestoreFileName, setPendingRestoreFileName] = useState('');
@@ -34,8 +35,6 @@ export default function App() {
   const [activeDeleteModal, setActiveDeleteModal] = useState({ show: false, loan: null });
   const [activeLoanDetailsId, setActiveLoanDetailsId] = useState(null);
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
-  const [showNotificationDebug, setShowNotificationDebug] = useState(false);
-  const [logoTapCount, setLogoTapCount] = useState(0);
   const restoreFileInputRef = useRef(null);
   const isSettingsOpenRef = useRef(isSettingsOpen);
   const pendingRestoreLoansRef = useRef(pendingRestoreLoans);
@@ -86,12 +85,6 @@ export default function App() {
   }, [loans, notificationsEnabled]);
 
   useEffect(() => {
-    if (logoTapCount === 0) return;
-    const timer = setTimeout(() => setLogoTapCount(0), 6000);
-    return () => clearTimeout(timer);
-  }, [logoTapCount]);
-
-  useEffect(() => {
     if (!Capacitor.isNativePlatform() || Capacitor.getPlatform() !== 'android') return undefined;
     const registerBackHandler = async () => {
       const listener = await CapacitorApp.addListener('backButton', ({ canGoBack }) => {
@@ -117,6 +110,7 @@ export default function App() {
 
         if (isSettingsOpenRef.current) {
           setIsSettingsOpen(false);
+          setIsSettingsTestOpen(false);
           return;
         }
 
@@ -157,17 +151,6 @@ export default function App() {
       cleanup();
     };
   }, []);
-
-  const handleLogoTap = () => {
-    setLogoTapCount((count) => {
-      const next = count + 1;
-      if (next >= 7) {
-        setShowNotificationDebug((prev) => !prev);
-        return 0;
-      }
-      return next;
-    });
-  };
 
   const handleAddLoanSave = (loanData) => {
     const updatedLoans = addLoan(loanData);
@@ -333,6 +316,11 @@ export default function App() {
     setPendingRestoreFileName('');
   };
 
+  const closeSettingsModal = () => {
+    setIsSettingsOpen(false);
+    setIsSettingsTestOpen(false);
+  };
+
   return (
     <div className="app-container" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       <header className="app-header">
@@ -350,7 +338,6 @@ export default function App() {
             padding: 0,
             cursor: 'pointer',
           }}
-          onPointerDown={handleLogoTap}
         >
           <img src="/favicon.png" alt="App Logo" className="app-main-logo" style={{ width: '2.8rem', height: '2.8rem', marginRight: '1rem', borderRadius: '0.5rem', boxShadow: '0 0 20px rgba(139, 92, 246, 0.4)' }} />
           <div>
@@ -372,17 +359,6 @@ export default function App() {
           onLoanSelect={(loan) => setActiveLoanDetailsId(loan.id)}
         />
 
-        {showNotificationDebug && (
-          <NotificationDebugPanel
-            loans={loans}
-            onRequestPermission={handleDebugPermissionCheck}
-            onResync={handleDebugResync}
-            onGetPending={handleDebugGetPending}
-            onSendTest={handleDebugTest}
-            onSendRealPreview={handleDebugRealPreview}
-            onClearAll={handleDebugClearAll}
-          />
-        )}
       </main>
 
       <section className="settings-section" aria-label="সেটিংস খোলার অংশ">
@@ -444,7 +420,7 @@ export default function App() {
       )}
 
       {isSettingsOpen && (
-        <div className="modal-overlay" onClick={() => setIsSettingsOpen(false)}>
+        <div className="modal-overlay" onClick={closeSettingsModal}>
           <div
             className="modal-content settings-modal-content"
             onClick={(event) => event.stopPropagation()}
@@ -453,7 +429,7 @@ export default function App() {
               <h2 className="text-2xl font-bold text-brand-gradient">সেটিংস</h2>
               <button
                 type="button"
-                onClick={() => setIsSettingsOpen(false)}
+                onClick={closeSettingsModal}
                 style={{
                   background: 'transparent',
                   border: 'none',
@@ -482,6 +458,13 @@ export default function App() {
               >
                 ব্যাকআপ ফিরিয়ে আনুন
               </button>
+              <button
+                type="button"
+                className="btn btn-secondary settings-action-btn settings-test-toggle-btn"
+                onClick={() => setIsSettingsTestOpen((prev) => !prev)}
+              >
+                {isSettingsTestOpen ? 'টেস্ট অপশন বন্ধ করুন' : 'টেস্ট অপশন খুলুন'}
+              </button>
             </div>
 
             <input
@@ -494,6 +477,20 @@ export default function App() {
 
             {settingsStatus && (
               <p className="text-xs text-muted settings-status-text">{settingsStatus}</p>
+            )}
+
+            {isSettingsTestOpen && (
+              <div className="settings-test-panel-wrap">
+                <NotificationDebugPanel
+                  loans={loans}
+                  onRequestPermission={handleDebugPermissionCheck}
+                  onResync={handleDebugResync}
+                  onGetPending={handleDebugGetPending}
+                  onSendTest={handleDebugTest}
+                  onSendRealPreview={handleDebugRealPreview}
+                  onClearAll={handleDebugClearAll}
+                />
+              </div>
             )}
           </div>
         </div>

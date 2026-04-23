@@ -1091,9 +1091,33 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
   width: 100%;
 }
 
+.settings-test-toggle-btn {
+  grid-column: 1 / -1;
+}
+
+.settings-test-panel-wrap {
+  margin-top: 0.9rem;
+}
+
 .settings-status-text {
   margin-top: 0.9rem;
   word-break: break-word;
+}
+
+.notification-debug-panel {
+  margin-top: 0.6rem;
+  padding: 1rem;
+}
+
+.notification-debug-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.55rem;
+}
+
+.notification-debug-btn {
+  width: 100%;
+  min-height: 2.45rem;
 }
 
 .restore-confirm-modal {
@@ -1211,6 +1235,10 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
   .settings-actions-wrap {
     grid-template-columns: 1fr;
   }
+
+  .notification-debug-actions {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 480px) {
@@ -1248,6 +1276,16 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
     width: 100%;
     padding: 1.35rem 1rem 1.2rem 1rem;
   }
+
+  .notification-debug-panel {
+    padding: 0.85rem;
+  }
+
+  .notification-debug-btn {
+    min-height: 2.35rem;
+    font-size: 0.86rem;
+    padding: 0.62rem 0.78rem;
+  }
 }
 
 @media (max-width: 360px) {
@@ -1263,6 +1301,12 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
   .settings-action-btn {
     font-size: 0.85rem;
     min-height: 2.4rem;
+  }
+
+  .notification-debug-btn {
+    font-size: 0.82rem;
+    min-height: 2.2rem;
+    padding: 0.55rem 0.6rem;
   }
 }
 

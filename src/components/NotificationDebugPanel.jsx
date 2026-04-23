@@ -9,35 +9,35 @@ export default function NotificationDebugPanel({
   onSendRealPreview,
   onClearAll,
 }) {
-  const [status, setStatus] = useState('Ready');
+  const [status, setStatus] = useState('প্রস্তুত');
   const [pendingRows, setPendingRows] = useState([]);
 
   const handleAction = async (runner, successText) => {
     try {
-      setStatus('Running...');
+      setStatus('চলছে...');
       const result = await runner();
       if (successText) setStatus(successText);
       return result;
     } catch (error) {
-      setStatus(`Error: ${error?.message || 'unknown error'}`);
+      setStatus(`ত্রুটি: ${error?.message || 'অজানা সমস্যা'}`);
       return null;
     }
   };
 
   const loadPending = async () => {
-    const result = await handleAction(onGetPending, 'Pending refreshed');
+    const result = await handleAction(onGetPending, 'পেন্ডিং তালিকা আপডেট হয়েছে');
     if (result) setPendingRows(result);
   };
 
   const sendTest = async () => {
-    const result = await handleAction(onSendTest, 'Test scheduled');
+    const result = await handleAction(onSendTest, 'টেস্ট নোটিফিকেশন সেট হয়েছে');
     if (result?.at) {
       setStatus(`Test যাবে: ${new Date(result.at).toLocaleString('bn-BD')}`);
     }
   };
 
   const sendRealPreview = async () => {
-    const result = await handleAction(onSendRealPreview, 'Real previews scheduled');
+    const result = await handleAction(onSendRealPreview, 'রিয়েল প্রিভিউ নোটিফিকেশন সেট হয়েছে');
     if (result?.length) {
       const previewTimes = result.map((item) => new Date(item.at).toLocaleTimeString('bn-BD')).join(', ');
       setStatus(`Real messages যাবে: ${previewTimes}`);
@@ -45,30 +45,30 @@ export default function NotificationDebugPanel({
   };
 
   return (
-    <div className="glass-card mt-6" style={{ padding: '1rem' }}>
+    <div className="glass-card notification-debug-panel">
       <div className="flex justify-between items-center mb-4">
-        <h3 className="text-base font-bold">Notification Debug Panel</h3>
-        <span className="text-xs text-muted">Loans: {loans.length}</span>
+        <h3 className="text-base font-bold">টেস্ট অপশন</h3>
+        <span className="text-xs text-muted">চলতি হিসাব: {loans.length}</span>
       </div>
 
-      <div className="flex gap-2" style={{ flexWrap: 'wrap' }}>
-        <button className="btn btn-secondary btn-sm" onClick={() => handleAction(onRequestPermission, 'Permission checked')}>
-          Permission Check
+      <div className="notification-debug-actions">
+        <button className="btn btn-secondary btn-sm notification-debug-btn" onClick={() => handleAction(onRequestPermission, 'পারমিশন চেক সম্পন্ন')}>
+          পারমিশন চেক
         </button>
-        <button className="btn btn-secondary btn-sm" onClick={() => handleAction(onResync, 'Resync completed')}>
-          Resync Reminders
+        <button className="btn btn-secondary btn-sm notification-debug-btn" onClick={() => handleAction(onResync, 'রিমাইন্ডার রিসিঙ্ক সম্পন্ন')}>
+          রিমাইন্ডার রিসিঙ্ক
         </button>
-        <button className="btn btn-secondary btn-sm" onClick={sendTest}>
-          Send Test (30s)
+        <button className="btn btn-secondary btn-sm notification-debug-btn" onClick={sendTest}>
+          টেস্ট পাঠান (৩০ সেকেন্ড)
         </button>
-        <button className="btn btn-secondary btn-sm" onClick={sendRealPreview}>
-          Real Messages (10/20/30s)
+        <button className="btn btn-secondary btn-sm notification-debug-btn" onClick={sendRealPreview}>
+          রিয়েল প্রিভিউ (১০/২০/৩০ সেকেন্ড)
         </button>
-        <button className="btn btn-secondary btn-sm" onClick={loadPending}>
-          Show Pending
+        <button className="btn btn-secondary btn-sm notification-debug-btn" onClick={loadPending}>
+          পেন্ডিং দেখুন
         </button>
-        <button className="btn btn-danger btn-sm" onClick={() => handleAction(onClearAll, 'All pending cleared')}>
-          Clear Pending
+        <button className="btn btn-danger btn-sm notification-debug-btn" onClick={() => handleAction(onClearAll, 'সব পেন্ডিং মুছে ফেলা হয়েছে')}>
+          পেন্ডিং ক্লিয়ার
         </button>
       </div>
 
