@@ -33,6 +33,12 @@ import {
 } from './services/notificationService';
 
 export default function App() {
+  const copyrightStartYear = 2026;
+  const currentYear = new Date().getFullYear();
+  const footerYearText = currentYear > copyrightStartYear
+    ? `${copyrightStartYear.toLocaleString('bn-BD', { useGrouping: false })}–${currentYear.toLocaleString('bn-BD', { useGrouping: false })}`
+    : copyrightStartYear.toLocaleString('bn-BD', { useGrouping: false });
+
   const [loans, setLoans] = useState(() => getLoans());
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isSettingsTestOpen, setIsSettingsTestOpen] = useState(false);
@@ -407,7 +413,7 @@ export default function App() {
       </section>
 
       <footer className="w-full text-center" style={{ marginTop: 'auto', paddingTop: '2rem', paddingBottom: '1rem', borderTop: '1px solid var(--border-subtle)' }}>
-        <p className="text-xs text-muted">© ২০২৬ হিসাব রক্ষক - আপনার লোন ও সুদের বিশ্বস্ত হিসাবসাথী। নির্মাতা: সুজিৎ বিশ্বাস</p>
+        <p className="text-xs text-muted">© {footerYearText} হিসাব রক্ষক - আপনার লোন ও সুদের বিশ্বস্ত হিসাবসাথী। নির্মাতা: সুজিৎ বিশ্বাস</p>
       </footer>
 
       {isAddingLoan && (

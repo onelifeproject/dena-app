@@ -75,8 +75,18 @@ export default function LoanDetailsModal({ loan, onClose, onEdit }) {
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-content loan-details-modal" onClick={(event) => event.stopPropagation()}>
-        <div className="mb-6 flex justify-between items-center">
-          <h2 className="text-2xl font-bold text-brand-gradient">হিসাবের বিস্তারিত</h2>
+        <div className="mb-6 loan-details-header">
+          <div className="loan-details-header-top">
+            <h2 className="text-2xl font-bold text-brand-gradient loan-details-title">হিসাবের বিস্তারিত</h2>
+            <button
+              type="button"
+              className="loan-details-close-btn"
+              onClick={onClose}
+              aria-label="বন্ধ করুন"
+            >
+              &times;
+            </button>
+          </div>
           <div className="loan-details-header-actions">
             <button
               type="button"
@@ -84,19 +94,6 @@ export default function LoanDetailsModal({ loan, onClose, onEdit }) {
               onClick={() => onEdit?.(loan)}
             >
               এডিট করুন
-            </button>
-            <button
-              onClick={onClose}
-              style={{
-                background: 'transparent',
-                border: 'none',
-                color: 'var(--text-muted)',
-                fontSize: '2rem',
-                cursor: 'pointer',
-                lineHeight: '1',
-              }}
-            >
-              &times;
             </button>
           </div>
         </div>

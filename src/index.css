@@ -909,10 +909,28 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
   max-width: 760px;
 }
 
+.loan-details-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.loan-details-header-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.loan-details-title {
+  margin: 0;
+  min-width: 0;
+}
+
 .loan-details-header-actions {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  justify-content: flex-start;
 }
 
 .loan-details-edit-btn {
@@ -920,6 +938,33 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
   padding: 0.5rem 0.9rem;
   min-height: 2.2rem;
   line-height: 1.2;
+}
+
+.loan-details-close-btn {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: var(--text-muted);
+  font-size: 2rem;
+  line-height: 1;
+  cursor: pointer;
+  width: 2rem;
+  height: 2rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  transition: background var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.loan-details-close-btn:hover {
+  background: rgba(139, 92, 246, 0.18);
+  border-color: rgba(139, 92, 246, 0.55);
+  color: var(--text-pure);
+}
+
+.loan-details-close-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.35);
 }
 
 .loan-details-grid {
@@ -1260,19 +1305,38 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
 }
 
 @media (max-width: 640px) {
+  .loan-details-header {
+    margin-bottom: 1rem !important;
+    gap: 0.4rem;
+  }
+
+  .loan-details-title {
+    width: 100%;
+    font-size: 1.4rem;
+    line-height: 1.2;
+  }
+
   .loan-details-grid {
     grid-template-columns: 1fr;
   }
 
   .loan-details-header-actions {
-    gap: 0.35rem;
+    width: 100%;
+    justify-content: flex-start;
   }
 
   .loan-details-edit-btn {
+    width: auto;
     border-radius: 8px;
-    padding: 0.42rem 0.7rem;
-    font-size: 0.82rem;
+    padding: 0.46rem 0.7rem;
+    font-size: 0.84rem;
     min-height: 2rem;
+  }
+
+  .loan-details-close-btn {
+    font-size: 1.7rem;
+    width: 1.9rem;
+    height: 1.9rem;
   }
 
   .loan-history-item {
