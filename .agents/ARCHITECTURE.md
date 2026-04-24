@@ -39,6 +39,7 @@ Important: `getLoans()` assumes valid JSON and has no parse fallback, so malform
 
 - active tab (`ACTIVE` or `DONE`)
 - selected month and year for summary
+- defaults to current month/year on app load (selection is not persisted across restart)
 
 Pattern used:
 
@@ -122,6 +123,7 @@ Pattern used:
   - Native save target is `Documents/Dena/` (no share sheet flow)
   - Includes full-screen image viewer with pinch zoom/pan/reset
   - Includes edit action button that opens add form in edit mode
+  - Header uses responsive two-row layout: title left, close button fixed top-right, edit button below
 - `AddLoanForm.jsx`
   - Captures new loan fields
   - Auto-suggests weekly interest = `Math.floor(principal * 0.1)`
@@ -164,6 +166,12 @@ Potential effect:
   - responsive behavior
   - `react-datepicker` overrides
   - crop modal / proof image styles
+  - small-device button safeguards (including `<=360px` compact button sizing)
+
+Footer behavior:
+
+- Footer year text is computed in `App.jsx` from base year `2026` to current year.
+- Display uses Bengali digits and range format (for example `২০২৬` or `২০২৬–২০২৮`).
 
 ## 8) Android Wrapper and Build Chain
 
@@ -231,6 +239,8 @@ CI automation:
 - Reduced mobile false-hover artifacts on touch devices (coarse pointer media queries).
 - Added responsive Settings modal and custom restore confirm modal.
 - Added responsive safeguards for small-device buttons (including settings/test panels).
+- Updated loan details modal header responsiveness and close icon highlight styling.
+- Added dynamic Bengali footer copyright year range.
 
 ## 12) Safe Change Checklist
 

@@ -120,6 +120,8 @@ Payment entry:
 - Settings is a dedicated responsive modal (opened from footer-area settings button).
 - Settings includes backup, restore, profit interval control, and toggleable notification test options.
 - Restore uses in-app confirmation modal (not browser native `confirm`) for consistent responsive UI.
+- Loan details header is mobile-optimized: title left, close button pinned top-right, edit button on a separate row.
+- Footer copyright year now auto-renders as dynamic Bengali range (`২০২৬`, `২০২৬–২০২৭`, `২০২৬–২০২৮`, ...).
 
 ## Recent Change Log (2026-04)
 
@@ -143,6 +145,10 @@ Payment entry:
   - Configurable profit interval days
   - Notification test panel (moved from logo-tap easter egg)
 - Added immediate active-loan due-date recalculation when profit interval changes.
+- Refined loan details modal header controls:
+  - close icon stays top-right with highlighted border/background
+  - edit button has separate responsive row for small screens
+- Added auto-updating Bengali footer year range (base year ২০২৬).
 
 ## Commands
 

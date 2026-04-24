@@ -11,6 +11,13 @@ The Android build currently includes:
 - Free-form crop UI (or skip crop) before save
 - Client-side image compression before persistence
 - Loan details modal with JPG download of proof image
+- Responsive Settings modal with:
+  - Backup export (`dena_YYYY-MM-DD_backup.json`)
+  - Restore import + in-app confirmation modal
+  - Configurable profit interval days (default 7)
+  - Notification test options panel
+- Profit interval change recalculates active loan due dates immediately
+- Dynamic footer year range in Bengali digits (`২০২৬`, `২০২৬–২০২৭`, ...)
 
 ## Why this matters
 
@@ -81,6 +88,13 @@ cd android
 Release outputs:
 
 - `android/app/build/outputs/apk/release/app-release.apk`
+
+## Build environment notes (important)
+
+- CI uses Java 21 (`actions/setup-java`) and Gradle wrapper from the repo.
+- Prefer Java 21 locally for Android release tasks.
+- If local build shows `Unsupported class file major version 70`, your local JDK is too new for current Gradle/AGP pairing; switch local JAVA_HOME to JDK 21.
+- `flatDir` repository warning has been removed from `android/app/build.gradle` (no local `.aar/.jar` libs currently used).
 
 ## Versioning rule per release
 
