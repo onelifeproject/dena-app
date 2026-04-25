@@ -161,6 +161,7 @@ export default function App() {
   const [currentAppVersion, setCurrentAppVersion] = useState(() => localStorage.getItem(CURRENT_APP_VERSION_KEY) || '');
   const [updateInfo, setUpdateInfo] = useState(null);
   const [isCheckingUpdate, setIsCheckingUpdate] = useState(false);
+  const [updateCheckStatusText, setUpdateCheckStatusText] = useState('');
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
   const [isUpdateDownloading, setIsUpdateDownloading] = useState(false);
   const [updateDownloadProgress, setUpdateDownloadProgress] = useState(0);
@@ -551,6 +552,7 @@ export default function App() {
 
   const checkForAppUpdate = useCallback(async ({ manual = false } = {}) => {
     if (isCheckingUpdate) return;
+    if (manual) setUpdateCheckStatusText('আপডেট চেক হচ্ছে...');
     setIsCheckingUpdate(true);
     try {
       const [currentVersion, latestRelease] = await Promise.all([
@@ -568,7 +570,11 @@ export default function App() {
 
       const hasUpdate = compareVersions(latestRelease.latestVersion, currentVersion) > 0;
       if (!hasUpdate) {
-        if (manual) setSettingsStatus(`আপনি সর্বশেষ ভার্সনে আছেন (v${currentVersion})।`);
+        if (manual) {
+          const message = `আপনি সর্বশেষ ভার্সনে আছেন (v${currentVersion})।`;
+          setSettingsStatus(message);
+          setUpdateCheckStatusText(message);
+        }
         return;
       }
 
@@ -582,12 +588,16 @@ export default function App() {
       setUpdateDownloadBytesText('');
       setIsUpdateModalOpen(true);
       if (manual) {
-        setSettingsStatus(`নতুন আপডেট পাওয়া গেছে: ${latestRelease.latestTag}`);
+        const message = `নতুন আপডেট পাওয়া গেছে: ${latestRelease.latestTag}`;
+        setSettingsStatus(message);
+        setUpdateCheckStatusText(message);
       }
     } catch (error) {
       console.error('Update check failed:', error);
       if (manual) {
-        setSettingsStatus('আপডেট চেক করা যায়নি। ইন্টারনেট ঠিক আছে কিনা দেখে আবার চেষ্টা করুন।');
+        const message = 'আপডেট চেক করা যায়নি। ইন্টারনেট ঠিক আছে কিনা দেখে আবার চেষ্টা করুন।';
+        setSettingsStatus(message);
+        setUpdateCheckStatusText(message);
       }
     } finally {
       setIsCheckingUpdate(false);
@@ -1332,6 +1342,9 @@ export default function App() {
                       </button>
                     )}
                   </div>
+                  {updateCheckStatusText && (
+                    <p className="text-xs settings-auto-backup-saved-note">{updateCheckStatusText}</p>
+                  )}
                 </div>
               </div>
 
