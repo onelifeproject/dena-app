@@ -36,13 +36,45 @@ import {
   clearDebugNotifications,
 } from './services/notificationService';
 
-const FIRST_RUN_SETTINGS_KEY = 'usuryFirstRunSettingsShown';
-const DASHBOARD_FILTERS_KEY = 'usuryDashboardFilters';
-const LAST_MANUAL_BACKUP_AT_KEY = 'usuryLastManualBackupAt';
+const FIRST_RUN_SETTINGS_KEY = 'denaFirstRunSettingsShown';
+const LEGACY_FIRST_RUN_SETTINGS_KEY = 'usuryFirstRunSettingsShown';
+const DASHBOARD_FILTERS_KEY = 'denaDashboardFilters';
+const LEGACY_DASHBOARD_FILTERS_KEY = 'usuryDashboardFilters';
+const LAST_MANUAL_BACKUP_AT_KEY = 'denaLastManualBackupAt';
+const LEGACY_LAST_MANUAL_BACKUP_AT_KEY = 'usuryLastManualBackupAt';
+const AUTO_BACKUP_SNAPSHOT_KEY = 'denaAutoBackupSnapshot';
+const LEGACY_AUTO_BACKUP_SNAPSHOT_KEY = 'usuryAutoBackupSnapshot';
 const AUTO_BACKUP_SOURCE_PATH = 'Dena/auto-backup-source.json';
 const AUTO_BACKUP_META_PATH = 'Dena/auto-backup-meta.json';
 const AddLoanForm = lazy(() => import('./components/AddLoanForm'));
 const LoanDetailsModal = lazy(() => import('./components/LoanDetailsModal'));
+
+const getStorageItemWithLegacy = (key, legacyKey) => {
+  const currentValue = localStorage.getItem(key);
+  if (currentValue !== null) return currentValue;
+  if (!legacyKey) return null;
+
+  const legacyValue = localStorage.getItem(legacyKey);
+  if (legacyValue === null) return null;
+
+  localStorage.setItem(key, legacyValue);
+  localStorage.removeItem(legacyKey);
+  return legacyValue;
+};
+
+const setStorageItemWithLegacy = (key, value, legacyKey) => {
+  localStorage.setItem(key, value);
+  if (legacyKey) {
+    localStorage.removeItem(legacyKey);
+  }
+};
+
+const removeStorageItemWithLegacy = (key, legacyKey) => {
+  localStorage.removeItem(key);
+  if (legacyKey) {
+    localStorage.removeItem(legacyKey);
+  }
+};
 
 const normalizeDashboardFilters = (value) => {
   const currentDate = new Date();
@@ -58,7 +90,7 @@ const normalizeDashboardFilters = (value) => {
 };
 
 const getDashboardFilters = () => {
-  const raw = localStorage.getItem(DASHBOARD_FILTERS_KEY);
+  const raw = getStorageItemWithLegacy(DASHBOARD_FILTERS_KEY, LEGACY_DASHBOARD_FILTERS_KEY);
   if (!raw) return normalizeDashboardFilters({});
   try {
     return normalizeDashboardFilters(JSON.parse(raw));
@@ -92,7 +124,9 @@ export default function App() {
   const [autoBackupConfig, setAutoBackupConfig] = useState(() => getAutoBackupConfig());
   const [autoBackupIntervalDraft, setAutoBackupIntervalDraft] = useState(() => String(getAutoBackupConfig().intervalDays));
   const [lastAutoBackupAt, setLastAutoBackupAt] = useState(() => getLastAutoBackupAt());
-  const [lastManualBackupAt, setLastManualBackupAt] = useState(() => localStorage.getItem(LAST_MANUAL_BACKUP_AT_KEY) || '');
+  const [lastManualBackupAt, setLastManualBackupAt] = useState(
+    () => getStorageItemWithLegacy(LAST_MANUAL_BACKUP_AT_KEY, LEGACY_LAST_MANUAL_BACKUP_AT_KEY) || '',
+  );
   const [pendingRestoreLoans, setPendingRestoreLoans] = useState(null);
   const [pendingRestoreProfitIntervalDays, setPendingRestoreProfitIntervalDays] = useState(null);
   const [pendingRestoreProfitPreset, setPendingRestoreProfitPreset] = useState(null);
@@ -154,11 +188,11 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    const hasShownFirstRunSettings = localStorage.getItem(FIRST_RUN_SETTINGS_KEY);
+    const hasShownFirstRunSettings = getStorageItemWithLegacy(FIRST_RUN_SETTINGS_KEY, LEGACY_FIRST_RUN_SETTINGS_KEY);
     if (hasShownFirstRunSettings) return;
 
     setIsSettingsOpen(true);
-    localStorage.setItem(FIRST_RUN_SETTINGS_KEY, '1');
+    setStorageItemWithLegacy(FIRST_RUN_SETTINGS_KEY, '1', LEGACY_FIRST_RUN_SETTINGS_KEY);
     setSettingsStatus('প্রথমবার ব্যবহার: অটো মুনাফা ও ব্যাকআপ সেটিংস একবার দেখে নিন।');
   }, []);
 
@@ -286,7 +320,11 @@ export default function App() {
   const handleDashboardFiltersChange = useCallback((nextFilters) => {
     const normalized = normalizeDashboardFilters(nextFilters);
     setDashboardFilters(normalized);
-    localStorage.setItem(DASHBOARD_FILTERS_KEY, JSON.stringify(normalized));
+    setStorageItemWithLegacy(
+      DASHBOARD_FILTERS_KEY,
+      JSON.stringify(normalized),
+      LEGACY_DASHBOARD_FILTERS_KEY,
+    );
   }, []);
 
   const activeLoanDetails = loans.find((loan) => loan.id === activeLoanDetailsId) || null;
@@ -347,8 +385,10 @@ export default function App() {
     profitPreset: getProfitPreset(),
     autoBackupConfig: getAutoBackupConfig(),
     lastAutoBackupAt: getLastAutoBackupAt(),
-    lastManualBackupAt: localStorage.getItem(LAST_MANUAL_BACKUP_AT_KEY) || '',
-    firstRunSettingsShown: localStorage.getItem(FIRST_RUN_SETTINGS_KEY) === '1',
+    lastManualBackupAt:
+      getStorageItemWithLegacy(LAST_MANUAL_BACKUP_AT_KEY, LEGACY_LAST_MANUAL_BACKUP_AT_KEY) || '',
+    firstRunSettingsShown:
+      getStorageItemWithLegacy(FIRST_RUN_SETTINGS_KEY, LEGACY_FIRST_RUN_SETTINGS_KEY) === '1',
     dashboardFilters,
     loans,
   }), [dashboardFilters, loans]);
@@ -360,7 +400,7 @@ export default function App() {
       const backupJson = JSON.stringify(backupPayload, null, 2);
 
       if (isAuto && !Capacitor.isNativePlatform()) {
-        localStorage.setItem('usuryAutoBackupSnapshot', backupJson);
+        setStorageItemWithLegacy(AUTO_BACKUP_SNAPSHOT_KEY, backupJson, LEGACY_AUTO_BACKUP_SNAPSHOT_KEY);
         const backupTime = saveLastAutoBackupAt();
         setLastAutoBackupAt(backupTime);
         setSettingsStatus(`অটো ব্যাকআপ সম্পন্ন (লোকাল কপি): ${new Date(backupTime).toLocaleString('bn-BD')}`);
@@ -379,7 +419,11 @@ export default function App() {
           const autoBackupTime = saveLastAutoBackupAt(backupTime);
           setLastAutoBackupAt(autoBackupTime);
         } else {
-          localStorage.setItem(LAST_MANUAL_BACKUP_AT_KEY, backupTime);
+          setStorageItemWithLegacy(
+            LAST_MANUAL_BACKUP_AT_KEY,
+            backupTime,
+            LEGACY_LAST_MANUAL_BACKUP_AT_KEY,
+          );
           setLastManualBackupAt(backupTime);
         }
         setSettingsStatus(`${isAuto ? 'অটো ব্যাকআপ' : 'ব্যাকআপ'} সম্পন্ন: Documents/Dena/${backupFileName}`);
@@ -400,7 +444,11 @@ export default function App() {
         const autoBackupTime = saveLastAutoBackupAt(backupTime);
         setLastAutoBackupAt(autoBackupTime);
       } else {
-        localStorage.setItem(LAST_MANUAL_BACKUP_AT_KEY, backupTime);
+        setStorageItemWithLegacy(
+          LAST_MANUAL_BACKUP_AT_KEY,
+          backupTime,
+          LEGACY_LAST_MANUAL_BACKUP_AT_KEY,
+        );
         setLastManualBackupAt(backupTime);
       }
       setSettingsStatus(`${isAuto ? 'অটো ব্যাকআপ' : 'ব্যাকআপ'} ডাউনলোড হয়েছে: ${backupFileName}`);
@@ -487,13 +535,17 @@ export default function App() {
     if (pendingRestoreDashboardFilters) {
       const normalizedFilters = normalizeDashboardFilters(pendingRestoreDashboardFilters);
       setDashboardFilters(normalizedFilters);
-      localStorage.setItem(DASHBOARD_FILTERS_KEY, JSON.stringify(normalizedFilters));
+      setStorageItemWithLegacy(
+        DASHBOARD_FILTERS_KEY,
+        JSON.stringify(normalizedFilters),
+        LEGACY_DASHBOARD_FILTERS_KEY,
+      );
     }
     if (pendingRestoreFirstRunSettingsShown !== null && pendingRestoreFirstRunSettingsShown !== undefined) {
       if (pendingRestoreFirstRunSettingsShown) {
-        localStorage.setItem(FIRST_RUN_SETTINGS_KEY, '1');
+        setStorageItemWithLegacy(FIRST_RUN_SETTINGS_KEY, '1', LEGACY_FIRST_RUN_SETTINGS_KEY);
       } else {
-        localStorage.removeItem(FIRST_RUN_SETTINGS_KEY);
+        removeStorageItemWithLegacy(FIRST_RUN_SETTINGS_KEY, LEGACY_FIRST_RUN_SETTINGS_KEY);
       }
     }
     if (pendingRestoreLastAutoBackupAt) {
@@ -501,7 +553,11 @@ export default function App() {
       setLastAutoBackupAt(restoredBackupAt);
     }
     if (pendingRestoreLastManualBackupAt) {
-      localStorage.setItem(LAST_MANUAL_BACKUP_AT_KEY, pendingRestoreLastManualBackupAt);
+      setStorageItemWithLegacy(
+        LAST_MANUAL_BACKUP_AT_KEY,
+        pendingRestoreLastManualBackupAt,
+        LEGACY_LAST_MANUAL_BACKUP_AT_KEY,
+      );
       setLastManualBackupAt(pendingRestoreLastManualBackupAt);
     }
     setLoans(getLoans());
