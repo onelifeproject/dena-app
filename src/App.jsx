@@ -184,6 +184,7 @@ export default function App() {
   const activeLoanDetailsIdRef = useRef(activeLoanDetailsId);
   const isAutoBackupRunningRef = useRef(false);
   const updateDownloadRequestRef = useRef(null);
+  const isCheckingUpdateRef = useRef(isCheckingUpdate);
   const isUpdateModalOpenRef = useRef(isUpdateModalOpen);
   const isNativeRestorePickerOpenRef = useRef(isNativeRestorePickerOpen);
   const isUpdateDownloadingRef = useRef(isUpdateDownloading);
@@ -196,10 +197,11 @@ export default function App() {
     isPaymentModalOpenRef.current = activePaymentModal.show;
     isDeleteModalOpenRef.current = activeDeleteModal.show;
     activeLoanDetailsIdRef.current = activeLoanDetailsId;
+    isCheckingUpdateRef.current = isCheckingUpdate;
     isUpdateModalOpenRef.current = isUpdateModalOpen;
     isNativeRestorePickerOpenRef.current = isNativeRestorePickerOpen;
     isUpdateDownloadingRef.current = isUpdateDownloading;
-  }, [activeDeleteModal.show, activeLoanDetailsId, activePaymentModal.show, editingLoanId, isAddingLoan, isNativeRestorePickerOpen, isSettingsOpen, isUpdateDownloading, isUpdateModalOpen, pendingRestoreLoans]);
+  }, [activeDeleteModal.show, activeLoanDetailsId, activePaymentModal.show, editingLoanId, isAddingLoan, isCheckingUpdate, isNativeRestorePickerOpen, isSettingsOpen, isUpdateDownloading, isUpdateModalOpen, pendingRestoreLoans]);
 
   useEffect(() => {
     const setupSystemBars = async () => {
@@ -551,7 +553,8 @@ export default function App() {
   }, []);
 
   const checkForAppUpdate = useCallback(async ({ manual = false } = {}) => {
-    if (isCheckingUpdate) return;
+    if (isCheckingUpdateRef.current) return;
+    isCheckingUpdateRef.current = true;
     if (manual) setUpdateCheckStatusText('আপডেট চেক হচ্ছে...');
     setIsCheckingUpdate(true);
     try {
@@ -600,9 +603,10 @@ export default function App() {
         setUpdateCheckStatusText(message);
       }
     } finally {
+      isCheckingUpdateRef.current = false;
       setIsCheckingUpdate(false);
     }
-  }, [fetchLatestRelease, getCurrentVersion, isCheckingUpdate]);
+  }, [fetchLatestRelease, getCurrentVersion]);
 
   const downloadApkBlob = useCallback((url) => new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
@@ -1332,15 +1336,6 @@ export default function App() {
                     >
                       {isCheckingUpdate ? 'চেক হচ্ছে...' : 'আপডেট চেক করুন'}
                     </button>
-                    {updateInfo && (
-                      <button
-                        type="button"
-                        className="btn btn-primary settings-action-btn"
-                        onClick={() => setIsUpdateModalOpen(true)}
-                      >
-                        আপডেট দেখুন
-                      </button>
-                    )}
                   </div>
                   {updateCheckStatusText && (
                     <p className="text-xs settings-auto-backup-saved-note">{updateCheckStatusText}</p>
