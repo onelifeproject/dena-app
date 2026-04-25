@@ -14,10 +14,10 @@ export default function PaymentModal({ loan, isSettle, onConfirm, onCancel }) {
       <div className="modal-content">
         <div className="mb-6">
             <h2 className="text-2xl font-bold mb-2 text-pure">
-              {isSettle ? 'পুরো টাকা বুঝে নিন' : 'সাপ্তাহিক লাভ জমা নিন'}
+              {isSettle ? 'পুরো টাকা বুঝে নিন' : 'সাপ্তাহিক মুনাফা জমা নিন'}
             </h2>
             <p className="text-sm text-secondary">
-              {isSettle ? `${loan.name} এর হিসাবটি পুরোপুরি পরিশোধ করা হচ্ছে।` : `${loan.name} এর এই সপ্তাহের লাভ জমা করা হচ্ছে।`}
+              {isSettle ? `${loan.name} এর হিসাবটি পুরোপুরি পরিশোধ করা হচ্ছে।` : `${loan.name} এর এই সপ্তাহের মুনাফা জমা করা হচ্ছে।`}
             </p>
         </div>
 

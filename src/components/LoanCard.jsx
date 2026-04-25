@@ -46,7 +46,7 @@ export default function LoanCard({ loan, onPaymentClick, onSettleClick, onDelete
              
              {lastPayment && (
                  <p className="text-xs text-secondary opacity-70">
-                     শেষ লাভ জমা: {formatBnDate(lastPayment.date)}
+                    শেষ মুনাফা জমা: {formatBnDate(lastPayment.date)}
                  </p>
              )}
              
@@ -106,7 +106,7 @@ export default function LoanCard({ loan, onPaymentClick, onSettleClick, onDelete
                     onPaymentClick(loan);
                   }}
                 >
-                  লাভ জমা
+                  মুনাফা জমা
                </button>
                <button 
                   className="btn btn-secondary compact-btn" 

@@ -1,9 +1,10 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { TransformComponent, TransformWrapper } from 'react-zoom-pan-pinch';
 import { compressImage } from '../utils/imageCompression';
 import DocumentCropModal from './DocumentCropModal';
+import { calculateInterestFromPreset } from '../utils/loanManager';
 
 const parseLoanStartDate = (value) => {
   if (!value) return new Date();
@@ -15,7 +16,7 @@ const parseLoanStartDate = (value) => {
   return Number.isNaN(date.getTime()) ? new Date() : date;
 };
 
-export default function AddLoanForm({ onSave, onCancel, initialLoan = null, mode = 'create' }) {
+export default function AddLoanForm({ onSave, onCancel, initialLoan = null, mode = 'create', profitPreset = null }) {
   const [name, setName] = useState(initialLoan?.name || '');
   
   // Use pure JS date for DatePicker, we will format it exactly later on submit.
@@ -33,17 +34,24 @@ export default function AddLoanForm({ onSave, onCancel, initialLoan = null, mode
   const [cropSource, setCropSource] = useState(null);
   const [cropSourceName, setCropSourceName] = useState('proof-image.png');
   const [isPreviewViewerOpen, setIsPreviewViewerOpen] = useState(false);
+  const [isRemoveImageConfirmOpen, setIsRemoveImageConfirmOpen] = useState(false);
   const cameraInputRef = useRef(null);
   const galleryInputRef = useRef(null);
 
   const handlePrincipalChange = (value) => {
     setPrincipal(value);
-    if (value && !isNaN(value)) {
-      setInterestPerWeek(Math.floor(Number(value) * 0.1).toString());
-    } else if (!value) {
+    if (!value || Number.isNaN(Number(value))) {
       setInterestPerWeek('');
+      return;
     }
+    setInterestPerWeek(String(calculateInterestFromPreset(Number(value), profitPreset || undefined)));
   };
+
+  useEffect(() => {
+    if (!principal) return;
+    if (Number.isNaN(Number(principal))) return;
+    setInterestPerWeek(String(calculateInterestFromPreset(Number(principal), profitPreset || undefined)));
+  }, [principal, profitPreset]);
 
   const fileToDataUrl = (file) =>
     new Promise((resolve, reject) => {
@@ -103,12 +111,30 @@ export default function AddLoanForm({ onSave, onCancel, initialLoan = null, mode
     });
   };
 
+  const handleOpenPreviewViewer = (event) => {
+    event?.preventDefault();
+    event?.stopPropagation();
+    setIsPreviewViewerOpen(true);
+  };
+
+  const handleRequestRemoveProofImage = (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setIsRemoveImageConfirmOpen(true);
+  };
+
+  const handleConfirmRemoveProofImage = () => {
+    setIsPreviewViewerOpen(false);
+    setIsRemoveImageConfirmOpen(false);
+    setProofImage(null);
+  };
+
   return (
     <div className="modal-overlay">
       <div className="modal-content">
         <div className="mb-6 flex justify-between items-center">
             <h2 className="text-2xl font-bold text-brand-gradient">{isEditMode ? 'হিসাব এডিট করুন' : 'নতুন লোন দিন'}</h2>
-            <button onClick={onCancel} style={{background:'transparent', border:'none', color:'var(--text-muted)', fontSize:'2rem', cursor:'pointer', lineHeight: '1'}}>&times;</button>
+            <button type="button" className="loan-details-close-btn" onClick={onCancel} aria-label="বন্ধ করুন">&times;</button>
         </div>
         
         <form onSubmit={handleSubmit}>
@@ -149,7 +175,7 @@ export default function AddLoanForm({ onSave, onCancel, initialLoan = null, mode
           </div>
 
           <div className="form-group mb-8">
-            <label className="form-label">সপ্তাহে লাভের পরিমাণ (৳)</label>
+            <label className="form-label">সপ্তাহে মুনাফার পরিমাণ (৳)</label>
             <input 
               type="number" 
               className="form-input" 
@@ -159,7 +185,7 @@ export default function AddLoanForm({ onSave, onCancel, initialLoan = null, mode
               required
             />
             <span className="text-xs text-brand-primary" style={{ marginLeft: '0.25rem', marginTop: '0.25rem', opacity: 0.9 }}>
-              আপনি চাইলে যেকোনো পরিমাণ বসাতে পারেন, যা আপনি লাভ হিসেবে নিবেন।
+              আপনি চাইলে যেকোনো পরিমাণ বসাতে পারেন, যা আপনি মুনাফা হিসেবে নিবেন।
             </span>
           </div>
 
@@ -168,10 +194,10 @@ export default function AddLoanForm({ onSave, onCancel, initialLoan = null, mode
             <div className="proof-uploader-card">
               <div className="proof-uploader-head">
                 <div>
-                  <p className="text-sm font-semibold">Document Proof</p>
+                  <p className="text-sm font-semibold">ডকুমেন্ট প্রুফ</p>
                   <p className="text-xs text-muted">স্ক্যান ফ্রেমে ক্রপ করে পরিষ্কার ছবি সেভ হবে</p>
                 </div>
-                <span className="proof-pill">Optional</span>
+                <span className="proof-pill">ঐচ্ছিক</span>
               </div>
 
               <div className="proof-actions-row">
@@ -228,24 +254,24 @@ export default function AddLoanForm({ onSave, onCancel, initialLoan = null, mode
                   src={proofImage.dataUrl}
                   alt="Proof preview"
                   className="proof-preview-image clickable-proof-image"
-                  onClick={() => setIsPreviewViewerOpen(true)}
+                  onClick={handleOpenPreviewViewer}
                 />
-                <button
-                  type="button"
-                  className="btn btn-secondary btn-sm"
-                  onClick={() => setIsPreviewViewerOpen(true)}
-                  style={{ marginTop: '0.75rem' }}
-                >
-                  ছবি বড় করে দেখুন
-                </button>
-                <button
-                  type="button"
-                  className="btn btn-danger btn-sm"
-                  onClick={() => setProofImage(null)}
-                  style={{ marginTop: '0.75rem' }}
-                >
-                  ছবি সরান
-                </button>
+                <div className="proof-preview-actions">
+                  <button
+                    type="button"
+                    className="btn btn-secondary btn-sm"
+                    onClick={handleOpenPreviewViewer}
+                  >
+                    ছবি বড় করে দেখুন
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-danger btn-sm"
+                    onClick={handleRequestRemoveProofImage}
+                  >
+                    ছবি সরান
+                  </button>
+                </div>
               </div>
             )}
           </div>
@@ -278,6 +304,7 @@ export default function AddLoanForm({ onSave, onCancel, initialLoan = null, mode
                 type="button"
                 className="image-viewer-close"
                 onClick={() => setIsPreviewViewerOpen(false)}
+                aria-label="বন্ধ করুন"
               >
                 &times;
               </button>
@@ -299,7 +326,7 @@ export default function AddLoanForm({ onSave, onCancel, initialLoan = null, mode
                       -
                     </button>
                     <button type="button" className="btn btn-secondary btn-sm" onClick={() => resetTransform()}>
-                      Reset
+                      রিসেট
                     </button>
                     <button type="button" className="btn btn-secondary btn-sm" onClick={() => zoomIn()}>
                       +
@@ -318,6 +345,33 @@ export default function AddLoanForm({ onSave, onCancel, initialLoan = null, mode
                 </>
               )}
             </TransformWrapper>
+          </div>
+        </div>
+      )}
+
+      {isRemoveImageConfirmOpen && (
+        <div className="modal-overlay image-remove-confirm-overlay">
+          <div className="image-remove-confirm-card">
+            <h3 className="text-lg font-bold text-pure">ছবি সরাতে চান?</h3>
+            <p className="text-sm text-muted image-remove-confirm-text">
+              এই ডকুমেন্ট প্রুফ ছবি হিসাব থেকে সরানো হবে।
+            </p>
+            <div className="image-remove-confirm-actions">
+              <button
+                type="button"
+                className="btn btn-secondary btn-sm"
+                onClick={() => setIsRemoveImageConfirmOpen(false)}
+              >
+                বাতিল
+              </button>
+              <button
+                type="button"
+                className="btn btn-danger btn-sm"
+                onClick={handleConfirmRemoveProofImage}
+              >
+                ছবি সরান
+              </button>
+            </div>
           </div>
         </div>
       )}

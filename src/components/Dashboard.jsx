@@ -10,10 +10,18 @@ const banglaMonths = [
 // Helper to reliably translate years without thousand separators locally
 const toBnYear = (year) => Number(year).toLocaleString('bn-BD', { useGrouping: false });
 
-export default function Dashboard({ loans, onPaymentClick, onSettleClick, onDeleteClick, onAddNewClick, onLoanSelect }) {
-  const [activeTab, setActiveTab] = useState('ACTIVE'); // ACTIVE or DONE
-  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
-  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
+export default function Dashboard({
+  loans,
+  onPaymentClick,
+  onSettleClick,
+  onDeleteClick,
+  onAddNewClick,
+  onLoanSelect,
+  activeTab = 'ACTIVE',
+  selectedYear = new Date().getFullYear(),
+  selectedMonth = new Date().getMonth(),
+  onFiltersChange,
+}) {
   const [openFilterMenu, setOpenFilterMenu] = useState(null);
   const filterMenuRef = useRef(null);
   
@@ -34,6 +42,15 @@ export default function Dashboard({ loans, onPaymentClick, onSettleClick, onDele
     document.addEventListener('pointerdown', handleClickOutside);
     return () => document.removeEventListener('pointerdown', handleClickOutside);
   }, []);
+
+  const handleFilterChange = (nextValue) => {
+    onFiltersChange?.({
+      activeTab,
+      selectedYear,
+      selectedMonth,
+      ...nextValue,
+    });
+  };
 
   return (
     <div className="w-full">
@@ -61,7 +78,7 @@ export default function Dashboard({ loans, onPaymentClick, onSettleClick, onDele
                         type="button"
                         className={`custom-select-option ${index === selectedMonth ? 'selected' : ''}`}
                         onClick={() => {
-                          setSelectedMonth(index);
+                          handleFilterChange({ selectedMonth: index });
                           setOpenFilterMenu(null);
                         }}
                       >
@@ -88,7 +105,7 @@ export default function Dashboard({ loans, onPaymentClick, onSettleClick, onDele
                         type="button"
                         className={`custom-select-option ${year === selectedYear ? 'selected' : ''}`}
                         onClick={() => {
-                          setSelectedYear(year);
+                          handleFilterChange({ selectedYear: year });
                           setOpenFilterMenu(null);
                         }}
                       >
@@ -111,7 +128,7 @@ export default function Dashboard({ loans, onPaymentClick, onSettleClick, onDele
           </div>
           <div className="stat-box stat-box-profit" style={{ position: 'relative' }}>
             <span className="text-xs text-muted">
-               {banglaMonths[selectedMonth]} মাসের লাভ
+               {banglaMonths[selectedMonth]} মাসের মুনাফা
             </span>
             <div className="stat-value text-gradient" style={{color: 'var(--color-success)'}}>
                 {monthlyInterest.toLocaleString('bn-BD')}
@@ -129,13 +146,13 @@ export default function Dashboard({ loans, onPaymentClick, onSettleClick, onDele
       <div className="tabs-container">
          <button 
             className={`tab-btn ${activeTab === 'ACTIVE' ? 'active' : ''}`}
-            onClick={() => setActiveTab('ACTIVE')}
+            onClick={() => handleFilterChange({ activeTab: 'ACTIVE' })}
          >
             চলতি হিসাব
          </button>
          <button 
             className={`tab-btn ${activeTab === 'DONE' ? 'active' : ''}`}
-            onClick={() => setActiveTab('DONE')}
+            onClick={() => handleFilterChange({ activeTab: 'DONE' })}
          >
             পরিশোধিত
          </button>

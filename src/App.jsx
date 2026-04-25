@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { App as CapacitorApp } from '@capacitor/app';
 import { Directory, Filesystem } from '@capacitor/filesystem';
@@ -20,6 +20,12 @@ import {
   getProfitIntervalDays,
   saveProfitIntervalDays,
   applyProfitIntervalToActiveLoans,
+  getProfitPreset,
+  saveProfitPreset,
+  getAutoBackupConfig,
+  saveAutoBackupConfig,
+  getLastAutoBackupAt,
+  saveLastAutoBackupAt,
 } from './utils/loanManager';
 import {
   requestNotificationAccess,
@@ -32,6 +38,32 @@ import {
   clearDebugNotifications,
 } from './services/notificationService';
 
+const FIRST_RUN_SETTINGS_KEY = 'usuryFirstRunSettingsShown';
+const DASHBOARD_FILTERS_KEY = 'usuryDashboardFilters';
+
+const normalizeDashboardFilters = (value) => {
+  const currentDate = new Date();
+  const parsedYear = Number.parseInt(value?.selectedYear, 10);
+  const parsedMonth = Number.parseInt(value?.selectedMonth, 10);
+  const activeTab = value?.activeTab === 'DONE' ? 'DONE' : 'ACTIVE';
+  const selectedYear = Number.isNaN(parsedYear) ? currentDate.getFullYear() : parsedYear;
+  const selectedMonth = Number.isNaN(parsedMonth)
+    ? currentDate.getMonth()
+    : Math.min(11, Math.max(0, parsedMonth));
+
+  return { activeTab, selectedYear, selectedMonth };
+};
+
+const getDashboardFilters = () => {
+  const raw = localStorage.getItem(DASHBOARD_FILTERS_KEY);
+  if (!raw) return normalizeDashboardFilters({});
+  try {
+    return normalizeDashboardFilters(JSON.parse(raw));
+  } catch {
+    return normalizeDashboardFilters({});
+  }
+};
+
 export default function App() {
   const copyrightStartYear = 2026;
   const currentYear = new Date().getFullYear();
@@ -40,12 +72,30 @@ export default function App() {
     : copyrightStartYear.toLocaleString('bn-BD', { useGrouping: false });
 
   const [loans, setLoans] = useState(() => getLoans());
+  const [dashboardFilters, setDashboardFilters] = useState(() => getDashboardFilters());
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isSettingsTestOpen, setIsSettingsTestOpen] = useState(false);
   const [profitIntervalDraft, setProfitIntervalDraft] = useState(() => String(getProfitIntervalDays()));
+  const [profitPreset, setProfitPreset] = useState(() => getProfitPreset());
+  const [profitPresetDraft, setProfitPresetDraft] = useState(() => {
+    const preset = getProfitPreset();
+    return {
+      principal: String(preset.principal),
+      interest: String(preset.interest),
+    };
+  });
   const [settingsStatus, setSettingsStatus] = useState('');
+  const [autoProfitSavedText, setAutoProfitSavedText] = useState('');
+  const [autoBackupConfig, setAutoBackupConfig] = useState(() => getAutoBackupConfig());
+  const [autoBackupIntervalDraft, setAutoBackupIntervalDraft] = useState(() => String(getAutoBackupConfig().intervalDays));
+  const [lastAutoBackupAt, setLastAutoBackupAt] = useState(() => getLastAutoBackupAt());
   const [pendingRestoreLoans, setPendingRestoreLoans] = useState(null);
   const [pendingRestoreProfitIntervalDays, setPendingRestoreProfitIntervalDays] = useState(null);
+  const [pendingRestoreProfitPreset, setPendingRestoreProfitPreset] = useState(null);
+  const [pendingRestoreAutoBackupConfig, setPendingRestoreAutoBackupConfig] = useState(null);
+  const [pendingRestoreDashboardFilters, setPendingRestoreDashboardFilters] = useState(null);
+  const [pendingRestoreFirstRunSettingsShown, setPendingRestoreFirstRunSettingsShown] = useState(null);
+  const [pendingRestoreLastAutoBackupAt, setPendingRestoreLastAutoBackupAt] = useState(null);
   const [pendingRestoreFileName, setPendingRestoreFileName] = useState('');
   const [isAddingLoan, setIsAddingLoan] = useState(false);
   const [editingLoanId, setEditingLoanId] = useState(null);
@@ -61,6 +111,7 @@ export default function App() {
   const isPaymentModalOpenRef = useRef(activePaymentModal.show);
   const isDeleteModalOpenRef = useRef(activeDeleteModal.show);
   const activeLoanDetailsIdRef = useRef(activeLoanDetailsId);
+  const isAutoBackupRunningRef = useRef(false);
 
   useEffect(() => {
     isSettingsOpenRef.current = isSettingsOpen;
@@ -95,6 +146,15 @@ export default function App() {
     };
 
     setupNotifications();
+  }, []);
+
+  useEffect(() => {
+    const hasShownFirstRunSettings = localStorage.getItem(FIRST_RUN_SETTINGS_KEY);
+    if (hasShownFirstRunSettings) return;
+
+    setIsSettingsOpen(true);
+    localStorage.setItem(FIRST_RUN_SETTINGS_KEY, '1');
+    setSettingsStatus('প্রথমবার ব্যবহার: অটো মুনাফা ও ব্যাকআপ সেটিংস একবার দেখে নিন।');
   }, []);
 
   useEffect(() => {
@@ -135,6 +195,11 @@ export default function App() {
         if (pendingRestoreLoansRef.current) {
           setPendingRestoreLoans(null);
           setPendingRestoreProfitIntervalDays(null);
+          setPendingRestoreProfitPreset(null);
+          setPendingRestoreAutoBackupConfig(null);
+          setPendingRestoreDashboardFilters(null);
+          setPendingRestoreFirstRunSettingsShown(null);
+          setPendingRestoreLastAutoBackupAt(null);
           setPendingRestoreFileName('');
           return;
         }
@@ -212,6 +277,12 @@ export default function App() {
     }
   };
 
+  const handleDashboardFiltersChange = useCallback((nextFilters) => {
+    const normalized = normalizeDashboardFilters(nextFilters);
+    setDashboardFilters(normalized);
+    localStorage.setItem(DASHBOARD_FILTERS_KEY, JSON.stringify(normalized));
+  }, []);
+
   const activeLoanDetails = loans.find((loan) => loan.id === activeLoanDetailsId) || null;
   const editingLoan = loans.find((loan) => loan.id === editingLoanId) || null;
 
@@ -242,9 +313,15 @@ export default function App() {
     await clearDebugNotifications();
   };
 
-  const formatBackupFileName = () => {
-    const dateText = new Date().toISOString().slice(0, 10);
-    return `dena_${dateText}_backup.json`;
+  const formatBackupFileName = (includeTime = false) => {
+    const now = new Date();
+    const dateText = now.toISOString().slice(0, 10);
+    if (!includeTime) return `dena_${dateText}_backup.json`;
+    const timeText = now
+      .toISOString()
+      .slice(11, 19)
+      .replace(/:/g, '-');
+    return `dena_${dateText}_${timeText}_backup.json`;
   };
 
   const toBase64 = (value) => {
@@ -256,17 +333,30 @@ export default function App() {
     return btoa(binary);
   };
 
-  const handleBackup = async () => {
+  const runBackup = useCallback(async ({ isAuto = false } = {}) => {
     try {
-      const backupFileName = formatBackupFileName();
+      const backupFileName = formatBackupFileName(isAuto);
       const backupPayload = {
         app: 'Dena',
         version: 1,
         createdAt: new Date().toISOString(),
         profitIntervalDays: getProfitIntervalDays(),
+        profitPreset: getProfitPreset(),
+        autoBackupConfig: getAutoBackupConfig(),
+        lastAutoBackupAt: getLastAutoBackupAt(),
+        firstRunSettingsShown: localStorage.getItem(FIRST_RUN_SETTINGS_KEY) === '1',
+        dashboardFilters,
         loans,
       };
       const backupJson = JSON.stringify(backupPayload, null, 2);
+
+      if (isAuto && !Capacitor.isNativePlatform()) {
+        localStorage.setItem('usuryAutoBackupSnapshot', backupJson);
+        const backupTime = saveLastAutoBackupAt();
+        setLastAutoBackupAt(backupTime);
+        setSettingsStatus(`অটো ব্যাকআপ সম্পন্ন (লোকাল কপি): ${new Date(backupTime).toLocaleString('bn-BD')}`);
+        return;
+      }
 
       if (Capacitor.isNativePlatform()) {
         await Filesystem.writeFile({
@@ -275,7 +365,9 @@ export default function App() {
           directory: Directory.Documents,
           recursive: true,
         });
-        setSettingsStatus(`ব্যাকআপ সম্পন্ন: Documents/Dena/${backupFileName}`);
+        const backupTime = saveLastAutoBackupAt();
+        setLastAutoBackupAt(backupTime);
+        setSettingsStatus(`${isAuto ? 'অটো ব্যাকআপ' : 'ব্যাকআপ'} সম্পন্ন: Documents/Dena/${backupFileName}`);
         return;
       }
 
@@ -288,22 +380,39 @@ export default function App() {
       anchor.click();
       document.body.removeChild(anchor);
       URL.revokeObjectURL(url);
-      setSettingsStatus(`ব্যাকআপ ডাউনলোড হয়েছে: ${backupFileName}`);
+      const backupTime = saveLastAutoBackupAt();
+      setLastAutoBackupAt(backupTime);
+      setSettingsStatus(`${isAuto ? 'অটো ব্যাকআপ' : 'ব্যাকআপ'} ডাউনলোড হয়েছে: ${backupFileName}`);
     } catch (error) {
       console.error('Backup failed:', error);
-      setSettingsStatus('ব্যাকআপ করা যায়নি। আবার চেষ্টা করুন।');
+      setSettingsStatus(`${isAuto ? 'অটো ব্যাকআপ' : 'ব্যাকআপ'} করা যায়নি। আবার চেষ্টা করুন।`);
     }
-  };
+  }, [dashboardFilters, loans]);
+
+  const handleBackup = async () => runBackup({ isAuto: false });
 
   const parseRestoreContent = (content) => {
     const parsed = JSON.parse(content);
     if (Array.isArray(parsed)) {
-      return { loans: parsed, profitIntervalDays: null };
+      return {
+        loans: parsed,
+        profitIntervalDays: null,
+        profitPreset: null,
+        autoBackupConfig: null,
+        dashboardFilters: null,
+        firstRunSettingsShown: null,
+        lastAutoBackupAt: null,
+      };
     }
     if (Array.isArray(parsed?.loans)) {
       return {
         loans: parsed.loans,
         profitIntervalDays: parsed.profitIntervalDays ?? null,
+        profitPreset: parsed.profitPreset ?? null,
+        autoBackupConfig: parsed.autoBackupConfig ?? null,
+        dashboardFilters: parsed.dashboardFilters ?? null,
+        firstRunSettingsShown: parsed.firstRunSettingsShown ?? null,
+        lastAutoBackupAt: parsed.lastAutoBackupAt ?? null,
       };
     }
     throw new Error('অকার্যকর ব্যাকআপ ফরম্যাট');
@@ -319,6 +428,11 @@ export default function App() {
       const restoredData = parseRestoreContent(text);
       setPendingRestoreLoans(restoredData.loans);
       setPendingRestoreProfitIntervalDays(restoredData.profitIntervalDays);
+      setPendingRestoreProfitPreset(restoredData.profitPreset);
+      setPendingRestoreAutoBackupConfig(restoredData.autoBackupConfig);
+      setPendingRestoreDashboardFilters(restoredData.dashboardFilters);
+      setPendingRestoreFirstRunSettingsShown(restoredData.firstRunSettingsShown);
+      setPendingRestoreLastAutoBackupAt(restoredData.lastAutoBackupAt);
       setPendingRestoreFileName(file.name);
     } catch (error) {
       console.error('Restore failed:', error);
@@ -333,6 +447,35 @@ export default function App() {
       const appliedDays = saveProfitIntervalDays(pendingRestoreProfitIntervalDays);
       setProfitIntervalDraft(String(appliedDays));
     }
+    if (pendingRestoreProfitPreset) {
+      const appliedPreset = saveProfitPreset(pendingRestoreProfitPreset);
+      setProfitPreset(appliedPreset);
+      setProfitPresetDraft({
+        principal: String(appliedPreset.principal),
+        interest: String(appliedPreset.interest),
+      });
+    }
+    if (pendingRestoreAutoBackupConfig) {
+      const appliedAutoBackupConfig = saveAutoBackupConfig(pendingRestoreAutoBackupConfig);
+      setAutoBackupConfig(appliedAutoBackupConfig);
+      setAutoBackupIntervalDraft(String(appliedAutoBackupConfig.intervalDays));
+    }
+    if (pendingRestoreDashboardFilters) {
+      const normalizedFilters = normalizeDashboardFilters(pendingRestoreDashboardFilters);
+      setDashboardFilters(normalizedFilters);
+      localStorage.setItem(DASHBOARD_FILTERS_KEY, JSON.stringify(normalizedFilters));
+    }
+    if (pendingRestoreFirstRunSettingsShown !== null && pendingRestoreFirstRunSettingsShown !== undefined) {
+      if (pendingRestoreFirstRunSettingsShown) {
+        localStorage.setItem(FIRST_RUN_SETTINGS_KEY, '1');
+      } else {
+        localStorage.removeItem(FIRST_RUN_SETTINGS_KEY);
+      }
+    }
+    if (pendingRestoreLastAutoBackupAt) {
+      const restoredBackupAt = saveLastAutoBackupAt(pendingRestoreLastAutoBackupAt);
+      setLastAutoBackupAt(restoredBackupAt);
+    }
     setLoans(getLoans());
     setActiveLoanDetailsId(null);
     setEditingLoanId(null);
@@ -340,6 +483,11 @@ export default function App() {
     setActiveDeleteModal({ show: false, loan: null });
     setPendingRestoreLoans(null);
     setPendingRestoreProfitIntervalDays(null);
+    setPendingRestoreProfitPreset(null);
+    setPendingRestoreAutoBackupConfig(null);
+    setPendingRestoreDashboardFilters(null);
+    setPendingRestoreFirstRunSettingsShown(null);
+    setPendingRestoreLastAutoBackupAt(null);
     setPendingRestoreFileName('');
     setSettingsStatus(`ব্যাকআপ ফিরিয়ে আনা সম্পন্ন: ${pendingRestoreFileName}`);
   };
@@ -347,15 +495,79 @@ export default function App() {
   const handleRestoreCancel = () => {
     setPendingRestoreLoans(null);
     setPendingRestoreProfitIntervalDays(null);
+    setPendingRestoreProfitPreset(null);
+    setPendingRestoreAutoBackupConfig(null);
+    setPendingRestoreDashboardFilters(null);
+    setPendingRestoreFirstRunSettingsShown(null);
+    setPendingRestoreLastAutoBackupAt(null);
     setPendingRestoreFileName('');
   };
 
-  const handleSaveProfitInterval = () => {
+  const handleSaveAutoProfitSettings = () => {
+    const appliedPreset = saveProfitPreset({
+      principal: profitPresetDraft.principal,
+      interest: profitPresetDraft.interest,
+    });
     const { intervalDays, loans: updatedLoans } = applyProfitIntervalToActiveLoans(profitIntervalDraft);
     setLoans(updatedLoans);
     setProfitIntervalDraft(String(intervalDays));
-    setSettingsStatus(`লাভ নেওয়ার ব্যবধান সেট করা হয়েছে: ${intervalDays} দিন (চলতি হিসাবেও আপডেট হয়েছে)`);
+    setProfitPreset(appliedPreset);
+    setProfitPresetDraft({
+      principal: String(appliedPreset.principal),
+      interest: String(appliedPreset.interest),
+    });
+    setAutoProfitSavedText(
+      `সংরক্ষিত সেটিংস: ${appliedPreset.principal.toLocaleString('bn-BD')} টাকায় ${appliedPreset.interest.toLocaleString('bn-BD')} টাকা মুনাফা, ব্যবধান ${intervalDays.toLocaleString('bn-BD')} দিন।`
+    );
+    setSettingsStatus(
+      `অটো মুনাফা সেটিংস সংরক্ষণ হয়েছে: ${appliedPreset.principal.toLocaleString('bn-BD')} টাকায় ${appliedPreset.interest.toLocaleString('bn-BD')} টাকা মুনাফা, ব্যবধান ${intervalDays.toLocaleString('bn-BD')} দিন। এটি নতুন ও চলতি উভয় হিসাবেই প্রযোজ্য।`
+    );
   };
+
+  const handleSetAutoBackupEnabled = (enabled) => {
+    const applied = saveAutoBackupConfig({ enabled, intervalDays: autoBackupIntervalDraft });
+    setAutoBackupConfig(applied);
+    setAutoBackupIntervalDraft(String(applied.intervalDays));
+    setSettingsStatus(
+      enabled
+        ? `অটো ব্যাকআপ চালু হয়েছে (${applied.intervalDays.toLocaleString('bn-BD')} দিন পরপর)।`
+        : 'অটো ব্যাকআপ বন্ধ করা হয়েছে।'
+    );
+  };
+
+  const handleSaveAutoBackupInterval = () => {
+    const applied = saveAutoBackupConfig({
+      enabled: autoBackupConfig.enabled,
+      intervalDays: autoBackupIntervalDraft,
+    });
+    setAutoBackupConfig(applied);
+    setAutoBackupIntervalDraft(String(applied.intervalDays));
+    setSettingsStatus(`অটো ব্যাকআপ ব্যবধান সেট: ${applied.intervalDays.toLocaleString('bn-BD')} দিন।`);
+  };
+
+  useEffect(() => {
+    if (!autoBackupConfig.enabled) return;
+
+    const intervalMs = autoBackupConfig.intervalDays * 24 * 60 * 60 * 1000;
+    const maybeRunAutoBackup = async () => {
+      if (isAutoBackupRunningRef.current) return;
+      const lastBackupAt = getLastAutoBackupAt();
+      const lastTime = lastBackupAt ? new Date(lastBackupAt).getTime() : 0;
+      const due = !lastTime || Number.isNaN(lastTime) || Date.now() - lastTime >= intervalMs;
+      if (!due) return;
+
+      isAutoBackupRunningRef.current = true;
+      try {
+        await runBackup({ isAuto: true });
+      } finally {
+        isAutoBackupRunningRef.current = false;
+      }
+    };
+
+    maybeRunAutoBackup();
+    const timerId = window.setInterval(maybeRunAutoBackup, 60 * 60 * 1000);
+    return () => window.clearInterval(timerId);
+  }, [autoBackupConfig.enabled, autoBackupConfig.intervalDays, runBackup]); // loans change হলে runBackup আপডেট হয়
 
   const closeSettingsModal = () => {
     setIsSettingsOpen(false);
@@ -398,6 +610,10 @@ export default function App() {
           onDeleteClick={handleDeleteRequest}
           onAddNewClick={() => setIsAddingLoan(true)}
           onLoanSelect={(loan) => setActiveLoanDetailsId(loan.id)}
+          activeTab={dashboardFilters.activeTab}
+          selectedYear={dashboardFilters.selectedYear}
+          selectedMonth={dashboardFilters.selectedMonth}
+          onFiltersChange={handleDashboardFiltersChange}
         />
 
       </main>
@@ -420,6 +636,7 @@ export default function App() {
         <AddLoanForm 
           onSave={handleAddLoanSave}
           onCancel={() => setIsAddingLoan(false)}
+          profitPreset={profitPreset}
         />
       )}
 
@@ -429,6 +646,7 @@ export default function App() {
           initialLoan={editingLoan}
           onSave={handleEditLoanSave}
           onCancel={() => setEditingLoanId(null)}
+          profitPreset={profitPreset}
         />
       )}
 
@@ -466,70 +684,172 @@ export default function App() {
             className="modal-content settings-modal-content"
             onClick={(event) => event.stopPropagation()}
           >
-            <div className="mb-6 flex justify-between items-center">
+            <div className="mb-6 flex justify-between items-center settings-modal-header">
               <h2 className="text-2xl font-bold text-brand-gradient">সেটিংস</h2>
               <button
                 type="button"
+                className="loan-details-close-btn"
                 onClick={closeSettingsModal}
-                style={{
-                  background: 'transparent',
-                  border: 'none',
-                  color: 'var(--text-muted)',
-                  fontSize: '2rem',
-                  cursor: 'pointer',
-                  lineHeight: '1',
-                }}
+                aria-label="বন্ধ করুন"
               >
                 &times;
               </button>
             </div>
 
             <div className="settings-actions-wrap">
-              <div className="settings-interval-card">
-                <p className="text-sm font-semibold">লাভ নেওয়ার ব্যবধান (দিন)</p>
-                <div className="settings-interval-row">
+              <div className="settings-interval-card settings-profit-card">
+                <p className="text-sm font-semibold">অটো মুনাফা হিসাব</p>
+                <p className="text-xs text-muted settings-interval-help">
+                  ১) আসল টাকা, ২) মুনাফা, ৩) মুনাফা নেওয়ার ব্যবধান (দিন) - এই ৩টি ঘর ধারাবাহিকভাবে পূরণ করুন।
+                </p>
+                <div className="settings-profit-row">
+                  <div className="settings-profit-input-wrap">
+                    <label className="text-xs text-muted">আসল টাকা (৳)</label>
+                    <input
+                      type="number"
+                      min="1"
+                      className="form-input settings-interval-input"
+                      value={profitPresetDraft.principal}
+                      onChange={(event) =>
+                        setProfitPresetDraft((prev) => ({
+                          ...prev,
+                          principal: event.target.value.replace(/[^\d]/g, ''),
+                        }))
+                      }
+                    />
+                  </div>
+                  <div className="settings-profit-input-wrap">
+                    <label className="text-xs text-muted">মুনাফা (৳)</label>
+                    <input
+                      type="number"
+                      min="1"
+                      className="form-input settings-interval-input"
+                      value={profitPresetDraft.interest}
+                      onChange={(event) =>
+                        setProfitPresetDraft((prev) => ({
+                          ...prev,
+                          interest: event.target.value.replace(/[^\d]/g, ''),
+                        }))
+                      }
+                    />
+                  </div>
+                  <div className="settings-profit-input-wrap">
+                    <label className="text-xs text-muted">মুনাফা নেওয়ার ব্যবধান (দিন)</label>
+                    <input
+                      type="number"
+                      min="1"
+                      max="365"
+                      className="form-input settings-interval-input"
+                      value={profitIntervalDraft}
+                      onChange={(event) => setProfitIntervalDraft(event.target.value.replace(/[^\d]/g, ''))}
+                    />
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  className="btn btn-primary settings-interval-save-btn settings-auto-profit-save-btn"
+                  onClick={handleSaveAutoProfitSettings}
+                >
+                  অটো মুনাফা সেটিংস সংরক্ষণ করুন
+                </button>
+                {autoProfitSavedText && (
+                  <p className="text-xs settings-auto-profit-saved-note">{autoProfitSavedText}</p>
+                )}
+                <p className="text-xs text-muted settings-profit-preview">
+                  এখনকার সেটিংস: {profitPreset.principal.toLocaleString('bn-BD')} টাকায় {profitPreset.interest.toLocaleString('bn-BD')} টাকা মুনাফা, ব্যবধান {Number(profitIntervalDraft || 0).toLocaleString('bn-BD')} দিন।
+                </p>
+                <p className="text-xs text-muted settings-interval-help">
+                  উদাহরণ: ৫০০০ টাকায় ৫০০ মুনাফা, ব্যবধান ৭ দিন।
+                </p>
+              </div>
+
+              <div className="settings-interval-card settings-tools-card">
+                <p className="text-sm font-semibold">অটো ব্যাকআপ</p>
+                <p className="text-xs text-muted settings-card-help">
+                  নির্ধারিত দিন পরপর স্বয়ংক্রিয় ব্যাকআপ চালু/বন্ধ করুন।
+                </p>
+                <div className="settings-auto-backup-head">
+                  <p className="text-sm font-semibold">অটো ব্যাকআপ স্ট্যাটাস</p>
+                  <button
+                    type="button"
+                    className={`btn btn-sm ${autoBackupConfig.enabled ? 'btn-primary' : 'btn-secondary'}`}
+                    onClick={() => handleSetAutoBackupEnabled(!autoBackupConfig.enabled)}
+                  >
+                    {autoBackupConfig.enabled ? 'চালু আছে' : 'বন্ধ আছে'}
+                  </button>
+                </div>
+                <p className="text-xs text-muted settings-card-help">
+                  {lastAutoBackupAt
+                    ? `সর্বশেষ ব্যাকআপ: ${new Date(lastAutoBackupAt).toLocaleString('bn-BD')}`
+                    : 'এখনও কোনো অটো ব্যাকআপ হয়নি।'}
+                </p>
+                <div className="settings-auto-backup-custom">
                   <input
                     type="number"
                     min="1"
                     max="365"
                     className="form-input settings-interval-input"
-                    value={profitIntervalDraft}
-                    onChange={(event) => setProfitIntervalDraft(event.target.value.replace(/[^\d]/g, ''))}
+                    value={autoBackupIntervalDraft}
+                    onChange={(event) => setAutoBackupIntervalDraft(event.target.value.replace(/[^\d]/g, ''))}
                   />
                   <button
                     type="button"
-                    className="btn btn-primary settings-interval-save-btn"
-                    onClick={handleSaveProfitInterval}
+                    className="btn btn-secondary settings-action-btn"
+                    onClick={handleSaveAutoBackupInterval}
                   >
-                    দিন সেভ
+                    দিন সেট করুন
                   </button>
                 </div>
-                <p className="text-xs text-muted settings-interval-help">
-                  ডিফল্ট ৭ দিন। নতুন হিসাব ও পরের লাভ জমায় এই দিন অনুযায়ী তারিখ ধরা হবে।
+                <p className="text-xs text-muted settings-card-help">
+                  ডিফল্ট ১ দিন। চাইলে এখানে যেকোনো দিন সেট করতে পারবেন।
                 </p>
               </div>
 
-              <button
-                type="button"
-                className="btn btn-primary settings-action-btn"
-                onClick={handleBackup}
-              >
-                ব্যাকআপ নিন
-              </button>
-              <button
-                type="button"
-                className="btn btn-secondary settings-action-btn"
-                onClick={() => restoreFileInputRef.current?.click()}
-              >
-                ব্যাকআপ ফিরিয়ে আনুন
-              </button>
-              <button
-                type="button"
-                className="btn btn-secondary settings-action-btn settings-test-toggle-btn"
-                onClick={() => setIsSettingsTestOpen((prev) => !prev)}
-              >
-                {isSettingsTestOpen ? 'টেস্ট অপশন বন্ধ করুন' : 'টেস্ট অপশন খুলুন'}
-              </button>
+              <div className="settings-interval-card settings-tools-card">
+                <p className="text-sm font-semibold">ম্যানুয়াল ব্যাকআপ</p>
+                <p className="text-xs text-muted settings-card-help">
+                  প্রয়োজন হলে এখনই পুরো অ্যাপের ব্যাকআপ ফাইল তৈরি করুন।
+                </p>
+                <div className="settings-backup-actions">
+                  <button
+                    type="button"
+                    className="btn btn-primary settings-action-btn"
+                    onClick={handleBackup}
+                  >
+                    ব্যাকআপ নিন
+                  </button>
+                </div>
+              </div>
+
+              <div className="settings-interval-card settings-tools-card">
+                <p className="text-sm font-semibold">রিস্টোর</p>
+                <p className="text-xs text-muted settings-card-help">
+                  ব্যাকআপ ফাইল থেকে আগের সব ডেটা পুনরুদ্ধার করুন।
+                </p>
+                <div className="settings-backup-actions">
+                  <button
+                    type="button"
+                    className="btn btn-secondary settings-action-btn"
+                    onClick={() => restoreFileInputRef.current?.click()}
+                  >
+                    ব্যাকআপ ফিরিয়ে আনুন
+                  </button>
+                </div>
+              </div>
+
+              <div className="settings-interval-card settings-tools-card">
+                <p className="text-sm font-semibold">টেস্ট অপশন</p>
+                <p className="text-xs text-muted settings-card-help">
+                  নোটিফিকেশন টেস্ট ও ডিবাগ অপশন চালু/বন্ধ করুন।
+                </p>
+                <button
+                  type="button"
+                  className="btn btn-secondary settings-action-btn settings-test-toggle-btn"
+                  onClick={() => setIsSettingsTestOpen((prev) => !prev)}
+                >
+                  {isSettingsTestOpen ? 'টেস্ট অপশন বন্ধ করুন' : 'টেস্ট অপশন খুলুন'}
+                </button>
+              </div>
             </div>
 
             <input

@@ -83,8 +83,10 @@ export default function DocumentCropModal({ imageSrc, onCancel, onConfirm, isPro
         <div className="mb-4 flex justify-between items-center">
           <h2 className="text-xl font-bold text-brand-gradient">ডকুমেন্ট স্ক্যান ফ্রেম</h2>
           <button
+            type="button"
+            className="loan-details-close-btn"
             onClick={onCancel}
-            style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', fontSize: '2rem', cursor: 'pointer', lineHeight: '1' }}
+            aria-label="বন্ধ করুন"
           >
             &times;
           </button>
