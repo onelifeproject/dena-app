@@ -71,7 +71,7 @@ const buildLoanNotifications = (loan) => {
     result.push({
       id: makeNotificationId(loan.id, 'day-before'),
       title: 'আগামীকাল কিস্তি',
-      body: `${loan.name} এর কিস্তি আগামীকাল। প্রাপ্য লাভ: ${Number(loan.interestPerWeek).toLocaleString('bn-BD')} টাকা।`,
+      body: `${loan.name} এর কিস্তি আগামীকাল। প্রাপ্য মুনাফা: ${Number(loan.interestPerWeek).toLocaleString('bn-BD')} টাকা।`,
       schedule: { at: dayBeforeAt4, allowWhileIdle: true },
       channelId: CHANNEL_ID,
       smallIcon: SMALL_ICON,
@@ -83,7 +83,7 @@ const buildLoanNotifications = (loan) => {
     result.push({
       id: makeNotificationId(loan.id, 'due-day'),
       title: 'আজ কিস্তি',
-      body: `${loan.name} আজ কিস্তি দেওয়ার কথা। প্রাপ্য লাভ: ${Number(loan.interestPerWeek).toLocaleString('bn-BD')} টাকা।`,
+      body: `${loan.name} আজ কিস্তি দেওয়ার কথা। প্রাপ্য মুনাফা: ${Number(loan.interestPerWeek).toLocaleString('bn-BD')} টাকা।`,
       schedule: { at: dueAt4, allowWhileIdle: true },
       channelId: CHANNEL_ID,
       smallIcon: SMALL_ICON,
@@ -223,7 +223,7 @@ export const scheduleRealMessagePreviewNotifications = async (loan) => {
     {
       id: DEBUG_NAMESPACE_MIN + ((now + 10000) % 100000),
       title: 'আগামীকাল কিস্তি',
-      body: `${customerName} এর কিস্তি আগামীকাল। প্রাপ্য লাভ: ${weeklyInterest} টাকা।`,
+      body: `${customerName} এর কিস্তি আগামীকাল। প্রাপ্য মুনাফা: ${weeklyInterest} টাকা।`,
       schedule: { at: new Date(now + 10000), allowWhileIdle: true },
       channelId: CHANNEL_ID,
       smallIcon: SMALL_ICON,
@@ -232,7 +232,7 @@ export const scheduleRealMessagePreviewNotifications = async (loan) => {
     {
       id: DEBUG_NAMESPACE_MIN + ((now + 20000) % 100000),
       title: 'আজ কিস্তি',
-      body: `${customerName} আজ কিস্তি দেওয়ার কথা। প্রাপ্য লাভ: ${weeklyInterest} টাকা।`,
+      body: `${customerName} আজ কিস্তি দেওয়ার কথা। প্রাপ্য মুনাফা: ${weeklyInterest} টাকা।`,
       schedule: { at: new Date(now + 20000), allowWhileIdle: true },
       channelId: CHANNEL_ID,
       smallIcon: SMALL_ICON,
