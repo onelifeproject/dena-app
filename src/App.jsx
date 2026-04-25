@@ -40,6 +40,8 @@ import {
 
 const FIRST_RUN_SETTINGS_KEY = 'usuryFirstRunSettingsShown';
 const DASHBOARD_FILTERS_KEY = 'usuryDashboardFilters';
+const AUTO_BACKUP_SOURCE_PATH = 'Dena/auto-backup-source.json';
+const AUTO_BACKUP_META_PATH = 'Dena/auto-backup-meta.json';
 
 const normalizeDashboardFilters = (value) => {
   const currentDate = new Date();
@@ -333,21 +335,23 @@ export default function App() {
     return btoa(binary);
   };
 
+  const buildBackupPayload = useCallback(() => ({
+    app: 'Dena',
+    version: 1,
+    createdAt: new Date().toISOString(),
+    profitIntervalDays: getProfitIntervalDays(),
+    profitPreset: getProfitPreset(),
+    autoBackupConfig: getAutoBackupConfig(),
+    lastAutoBackupAt: getLastAutoBackupAt(),
+    firstRunSettingsShown: localStorage.getItem(FIRST_RUN_SETTINGS_KEY) === '1',
+    dashboardFilters,
+    loans,
+  }), [dashboardFilters, loans]);
+
   const runBackup = useCallback(async ({ isAuto = false } = {}) => {
     try {
       const backupFileName = formatBackupFileName(isAuto);
-      const backupPayload = {
-        app: 'Dena',
-        version: 1,
-        createdAt: new Date().toISOString(),
-        profitIntervalDays: getProfitIntervalDays(),
-        profitPreset: getProfitPreset(),
-        autoBackupConfig: getAutoBackupConfig(),
-        lastAutoBackupAt: getLastAutoBackupAt(),
-        firstRunSettingsShown: localStorage.getItem(FIRST_RUN_SETTINGS_KEY) === '1',
-        dashboardFilters,
-        loans,
-      };
+      const backupPayload = buildBackupPayload();
       const backupJson = JSON.stringify(backupPayload, null, 2);
 
       if (isAuto && !Capacitor.isNativePlatform()) {
@@ -387,7 +391,7 @@ export default function App() {
       console.error('Backup failed:', error);
       setSettingsStatus(`${isAuto ? 'অটো ব্যাকআপ' : 'ব্যাকআপ'} করা যায়নি। আবার চেষ্টা করুন।`);
     }
-  }, [dashboardFilters, loans]);
+  }, [buildBackupPayload]);
 
   const handleBackup = async () => runBackup({ isAuto: false });
 
@@ -568,6 +572,39 @@ export default function App() {
     const timerId = window.setInterval(maybeRunAutoBackup, 60 * 60 * 1000);
     return () => window.clearInterval(timerId);
   }, [autoBackupConfig.enabled, autoBackupConfig.intervalDays, runBackup]); // loans change হলে runBackup আপডেট হয়
+
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform()) return;
+
+    const syncAutoBackupMirror = async () => {
+      try {
+        const backupJson = JSON.stringify(buildBackupPayload(), null, 2);
+        const metaJson = JSON.stringify({
+          enabled: autoBackupConfig.enabled,
+          intervalDays: autoBackupConfig.intervalDays,
+          lastBackupAt: getLastAutoBackupAt() || '',
+          updatedAt: new Date().toISOString(),
+        });
+
+        await Filesystem.writeFile({
+          path: AUTO_BACKUP_SOURCE_PATH,
+          data: toBase64(backupJson),
+          directory: Directory.Data,
+          recursive: true,
+        });
+        await Filesystem.writeFile({
+          path: AUTO_BACKUP_META_PATH,
+          data: toBase64(metaJson),
+          directory: Directory.Data,
+          recursive: true,
+        });
+      } catch (error) {
+        console.error('Auto backup mirror sync failed:', error);
+      }
+    };
+
+    syncAutoBackupMirror();
+  }, [autoBackupConfig.enabled, autoBackupConfig.intervalDays, buildBackupPayload, lastAutoBackupAt]);
 
   const closeSettingsModal = () => {
     setIsSettingsOpen(false);
