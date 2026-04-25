@@ -168,6 +168,7 @@ export default function App() {
   const [updateDownloadedApkUri, setUpdateDownloadedApkUri] = useState('');
   const [updateDownloadedFileName, setUpdateDownloadedFileName] = useState('');
   const [updateDownloadBytesText, setUpdateDownloadBytesText] = useState('');
+  const [updateDownloadErrorText, setUpdateDownloadErrorText] = useState('');
   const [isAddingLoan, setIsAddingLoan] = useState(false);
   const [editingLoanId, setEditingLoanId] = useState(null);
   const [activePaymentModal, setActivePaymentModal] = useState({ show: false, loan: null, isSettle: false });
@@ -651,18 +652,53 @@ export default function App() {
     setUpdateDownloadedFileName('');
     setUpdateDownloadProgress(0);
     setUpdateDownloadBytesText('');
+    setUpdateDownloadErrorText('');
     try {
-      const apkBlob = await downloadApkBlob(updateInfo.apkUrl);
       const fileName = updateInfo.apkName || `Dena-v${updateInfo.latestVersion}.apk`;
-      const base64Data = await blobToBase64(apkBlob);
-      await Filesystem.writeFile({
-        path: `Dena/updates/${fileName}`,
-        data: base64Data,
-        directory: Directory.Documents,
-        recursive: true,
-      });
+      const targetPath = `Dena/updates/${fileName}`;
+
+      if (Capacitor.isNativePlatform() && typeof Filesystem.downloadFile === 'function') {
+        let progressListener = null;
+        try {
+          progressListener = await Filesystem.addListener('progress', (event) => {
+            const total = Number(event?.contentLength || 0);
+            const loaded = Number(event?.bytes || 0);
+            if (total > 0) {
+              const progress = Math.round((loaded / total) * 100);
+              setUpdateDownloadProgress(progress);
+              setUpdateDownloadBytesText(`${formatBytes(loaded)} / ${formatBytes(total)}`);
+            } else if (loaded > 0) {
+              setUpdateDownloadBytesText(`${formatBytes(loaded)} ডাউনলোড হয়েছে`);
+            }
+          });
+        } catch {
+          progressListener = null;
+        }
+
+        await Filesystem.downloadFile({
+          url: updateInfo.apkUrl,
+          path: targetPath,
+          directory: Directory.Documents,
+          recursive: true,
+          progress: true,
+        });
+
+        if (progressListener) {
+          await progressListener.remove();
+        }
+      } else {
+        const apkBlob = await downloadApkBlob(updateInfo.apkUrl);
+        const base64Data = await blobToBase64(apkBlob);
+        await Filesystem.writeFile({
+          path: targetPath,
+          data: base64Data,
+          directory: Directory.Documents,
+          recursive: true,
+        });
+      }
+
       const fileUri = await Filesystem.getUri({
-        path: `Dena/updates/${fileName}`,
+        path: targetPath,
         directory: Directory.Documents,
       });
       setUpdateDownloadProgress(100);
@@ -673,7 +709,9 @@ export default function App() {
     } catch (error) {
       console.error('Update download failed:', error);
       const isAborted = String(error?.message || '').includes('aborted');
-      setSettingsStatus(isAborted ? 'ডাউনলোড বাতিল হয়েছে।' : 'আপডেট ডাউনলোড করা যায়নি। আবার চেষ্টা করুন।');
+      const message = isAborted ? 'ডাউনলোড বাতিল হয়েছে।' : 'আপডেট ডাউনলোড করা যায়নি। আবার চেষ্টা করুন।';
+      setSettingsStatus(message);
+      setUpdateDownloadErrorText(message);
     } finally {
       updateDownloadRequestRef.current = null;
       setIsUpdateDownloading(false);
@@ -686,6 +724,7 @@ export default function App() {
     request.abort();
     updateDownloadRequestRef.current = null;
     setIsUpdateDownloading(false);
+    setUpdateDownloadErrorText('ডাউনলোড বাতিল হয়েছে।');
   };
 
   const handleInstallUpdate = async () => {
@@ -1428,6 +1467,11 @@ export default function App() {
             {updateDownloadedApkUri && (
               <p className="text-xs settings-auto-backup-saved-note">
                 ডাউনলোড সম্পন্ন: {updateDownloadedFileName}
+              </p>
+            )}
+            {!updateDownloadedApkUri && updateDownloadErrorText && (
+              <p className="text-xs settings-auto-backup-saved-note">
+                {updateDownloadErrorText}
               </p>
             )}
 
