@@ -5,6 +5,9 @@ on:
     branches: [ "master", "main" ]
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build-android:
     runs-on: ubuntu-latest
@@ -61,3 +64,19 @@ jobs:
       with:
         name: Dena-Android-v${{ env.VERSION_NAME }}-${{ env.VERSION_CODE }}
         path: android/app/build/outputs/apk/release/${{ env.APK_FILE_NAME }}
+
+    - name: Publish GitHub Release (Tag + APK)
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        TAG_NAME="v${VERSION_NAME}"
+        RELEASE_TITLE="Dena ${TAG_NAME}"
+        APK_PATH="android/app/build/outputs/apk/release/${APK_FILE_NAME}"
+
+        if gh release view "$TAG_NAME" >/dev/null 2>&1; then
+          echo "Release exists for ${TAG_NAME}. Uploading APK (overwrite if needed)."
+          gh release upload "$TAG_NAME" "$APK_PATH" --clobber
+        else
+          echo "Creating release ${TAG_NAME} with APK."
+          gh release create "$TAG_NAME" "$APK_PATH" --title "$RELEASE_TITLE" --notes "Automated Android release build."
+        fi
