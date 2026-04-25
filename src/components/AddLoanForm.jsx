@@ -1,10 +1,11 @@
-import { useEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
-import { TransformComponent, TransformWrapper } from 'react-zoom-pan-pinch';
 import { compressImage } from '../utils/imageCompression';
-import DocumentCropModal from './DocumentCropModal';
 import { calculateInterestFromPreset } from '../utils/loanManager';
+
+const DocumentCropModal = lazy(() => import('./DocumentCropModal'));
+const ZoomableImageViewerModal = lazy(() => import('./ZoomableImageViewerModal'));
 
 const parseLoanStartDate = (value) => {
   if (!value) return new Date();
@@ -128,6 +129,14 @@ export default function AddLoanForm({ onSave, onCancel, initialLoan = null, mode
     setIsRemoveImageConfirmOpen(false);
     setProofImage(null);
   };
+
+  const modalLoadingFallback = (
+    <div className="modal-overlay">
+      <div className="modal-content">
+        <p className="text-sm text-muted">লোড হচ্ছে...</p>
+      </div>
+    </div>
+  );
 
   return (
     <div className="modal-overlay">
@@ -286,68 +295,26 @@ export default function AddLoanForm({ onSave, onCancel, initialLoan = null, mode
         </form>
       </div>
 
-      {cropSource && (
-        <DocumentCropModal
-          imageSrc={cropSource}
-          onCancel={() => setCropSource(null)}
-          onConfirm={handleCropConfirm}
-          isProcessing={isProcessingImage}
+      <Suspense fallback={modalLoadingFallback}>
+        {cropSource && (
+          <DocumentCropModal
+            imageSrc={cropSource}
+            onCancel={() => setCropSource(null)}
+            onConfirm={handleCropConfirm}
+            isProcessing={isProcessingImage}
+          />
+        )}
+      </Suspense>
+
+      <Suspense fallback={modalLoadingFallback}>
+        <ZoomableImageViewerModal
+          isOpen={isPreviewViewerOpen}
+          imageSrc={proofImage?.dataUrl}
+          imageAlt="Proof preview zoomed"
+          title="ডকুমেন্ট প্রিভিউ"
+          onClose={() => setIsPreviewViewerOpen(false)}
         />
-      )}
-
-      {isPreviewViewerOpen && proofImage?.dataUrl && (
-        <div className="modal-overlay image-viewer-overlay" onClick={() => setIsPreviewViewerOpen(false)}>
-          <div className="image-viewer-shell" onClick={(event) => event.stopPropagation()}>
-            <div className="image-viewer-toolbar">
-              <h3 className="text-base font-bold text-pure">ডকুমেন্ট প্রিভিউ</h3>
-              <button
-                type="button"
-                className="image-viewer-close"
-                onClick={() => setIsPreviewViewerOpen(false)}
-                aria-label="বন্ধ করুন"
-              >
-                &times;
-              </button>
-            </div>
-
-            <TransformWrapper
-              minScale={1}
-              maxScale={6}
-              initialScale={1}
-              wheel={{ step: 0.2 }}
-              pinch={{ step: 5 }}
-              doubleClick={{ mode: 'toggle', step: 1.4 }}
-              panning={{ velocityDisabled: true }}
-            >
-              {({ zoomIn, zoomOut, resetTransform }) => (
-                <>
-                  <div className="image-viewer-actions">
-                    <button type="button" className="btn btn-secondary btn-sm" onClick={() => zoomOut()}>
-                      -
-                    </button>
-                    <button type="button" className="btn btn-secondary btn-sm" onClick={() => resetTransform()}>
-                      রিসেট
-                    </button>
-                    <button type="button" className="btn btn-secondary btn-sm" onClick={() => zoomIn()}>
-                      +
-                    </button>
-                  </div>
-                  <TransformComponent
-                    wrapperClass="image-viewer-transform-wrapper"
-                    contentClass="image-viewer-transform-content"
-                  >
-                    <img
-                      src={proofImage.dataUrl}
-                      alt="Proof preview zoomed"
-                      className="image-viewer-image"
-                    />
-                  </TransformComponent>
-                </>
-              )}
-            </TransformWrapper>
-          </div>
-        </div>
-      )}
+      </Suspense>
 
       {isRemoveImageConfirmOpen && (
         <div className="modal-overlay image-remove-confirm-overlay">

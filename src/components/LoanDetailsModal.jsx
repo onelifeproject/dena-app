@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { lazy, Suspense, useState } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { Directory, Filesystem } from '@capacitor/filesystem';
-import { TransformComponent, TransformWrapper } from 'react-zoom-pan-pinch';
+
+const ZoomableImageViewerModal = lazy(() => import('./ZoomableImageViewerModal'));
 
 const banglaDays = ['রবিবার', 'সোমবার', 'মঙ্গলবার', 'বুধবার', 'বৃহস্পতিবার', 'শুক্রবার', 'শনিবার'];
 
@@ -71,6 +72,14 @@ export default function LoanDetailsModal({ loan, onClose, onEdit }) {
       window.alert('ছবি সেভ করা যায়নি। আবার চেষ্টা করুন।');
     }
   };
+
+  const modalLoadingFallback = (
+    <div className="modal-overlay">
+      <div className="modal-content">
+        <p className="text-sm text-muted">লোড হচ্ছে...</p>
+      </div>
+    </div>
+  );
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -178,65 +187,15 @@ export default function LoanDetailsModal({ loan, onClose, onEdit }) {
         </div>
       </div>
 
-      {isImageViewerOpen && loan.proofImage?.dataUrl && (
-        <div
-          className="modal-overlay image-viewer-overlay"
-          onClick={(event) => {
-            event.stopPropagation();
-            setIsImageViewerOpen(false);
-          }}
-        >
-          <div className="image-viewer-shell" onClick={(event) => event.stopPropagation()}>
-            <div className="image-viewer-toolbar">
-              <h3 className="text-base font-bold text-pure">ডকুমেন্ট প্রিভিউ</h3>
-              <button
-                type="button"
-                className="image-viewer-close"
-                onClick={() => setIsImageViewerOpen(false)}
-                aria-label="বন্ধ করুন"
-              >
-                &times;
-              </button>
-            </div>
-
-            <TransformWrapper
-              minScale={1}
-              maxScale={6}
-              initialScale={1}
-              wheel={{ step: 0.2 }}
-              pinch={{ step: 5 }}
-              doubleClick={{ mode: 'toggle', step: 1.4 }}
-              panning={{ velocityDisabled: true }}
-            >
-              {({ zoomIn, zoomOut, resetTransform }) => (
-                <>
-                  <div className="image-viewer-actions">
-                    <button type="button" className="btn btn-secondary btn-sm" onClick={() => zoomOut()}>
-                      -
-                    </button>
-                    <button type="button" className="btn btn-secondary btn-sm" onClick={() => resetTransform()}>
-                      রিসেট
-                    </button>
-                    <button type="button" className="btn btn-secondary btn-sm" onClick={() => zoomIn()}>
-                      +
-                    </button>
-                  </div>
-                  <TransformComponent
-                    wrapperClass="image-viewer-transform-wrapper"
-                    contentClass="image-viewer-transform-content"
-                  >
-                    <img
-                      src={loan.proofImage.dataUrl}
-                      alt={`${loan.name} proof zoomed`}
-                      className="image-viewer-image"
-                    />
-                  </TransformComponent>
-                </>
-              )}
-            </TransformWrapper>
-          </div>
-        </div>
-      )}
+      <Suspense fallback={modalLoadingFallback}>
+        <ZoomableImageViewerModal
+          isOpen={isImageViewerOpen}
+          imageSrc={loan.proofImage?.dataUrl}
+          imageAlt={`${loan.name} proof zoomed`}
+          title="ডকুমেন্ট প্রিভিউ"
+          onClose={() => setIsImageViewerOpen(false)}
+        />
+      </Suspense>
     </div>
   );
 }

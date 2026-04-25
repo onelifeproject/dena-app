@@ -1,13 +1,11 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, lazy, Suspense } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { App as CapacitorApp } from '@capacitor/app';
 import { Directory, Filesystem } from '@capacitor/filesystem';
 import { StatusBar, Style } from '@capacitor/status-bar';
 import Dashboard from './components/Dashboard';
-import AddLoanForm from './components/AddLoanForm';
 import PaymentModal from './components/PaymentModal';
 import DeleteModal from './components/DeleteModal';
-import LoanDetailsModal from './components/LoanDetailsModal';
 import LiveClock from './components/LiveClock';
 import NotificationDebugPanel from './components/NotificationDebugPanel';
 import {
@@ -43,6 +41,8 @@ const DASHBOARD_FILTERS_KEY = 'usuryDashboardFilters';
 const LAST_MANUAL_BACKUP_AT_KEY = 'usuryLastManualBackupAt';
 const AUTO_BACKUP_SOURCE_PATH = 'Dena/auto-backup-source.json';
 const AUTO_BACKUP_META_PATH = 'Dena/auto-backup-meta.json';
+const AddLoanForm = lazy(() => import('./components/AddLoanForm'));
+const LoanDetailsModal = lazy(() => import('./components/LoanDetailsModal'));
 
 const normalizeDashboardFilters = (value) => {
   const currentDate = new Date();
@@ -637,6 +637,14 @@ export default function App() {
     setIsSettingsTestOpen(false);
   };
 
+  const modalLoadingFallback = (
+    <div className="modal-overlay">
+      <div className="modal-content">
+        <p className="text-sm text-muted">লোড হচ্ছে...</p>
+      </div>
+    </div>
+  );
+
   return (
     <div className="app-container" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       <header className="app-header">
@@ -696,21 +704,25 @@ export default function App() {
       </footer>
 
       {isAddingLoan && (
-        <AddLoanForm 
-          onSave={handleAddLoanSave}
-          onCancel={() => setIsAddingLoan(false)}
-          profitPreset={profitPreset}
-        />
+        <Suspense fallback={modalLoadingFallback}>
+          <AddLoanForm 
+            onSave={handleAddLoanSave}
+            onCancel={() => setIsAddingLoan(false)}
+            profitPreset={profitPreset}
+          />
+        </Suspense>
       )}
 
       {editingLoan && (
-        <AddLoanForm
-          mode="edit"
-          initialLoan={editingLoan}
-          onSave={handleEditLoanSave}
-          onCancel={() => setEditingLoanId(null)}
-          profitPreset={profitPreset}
-        />
+        <Suspense fallback={modalLoadingFallback}>
+          <AddLoanForm
+            mode="edit"
+            initialLoan={editingLoan}
+            onSave={handleEditLoanSave}
+            onCancel={() => setEditingLoanId(null)}
+            profitPreset={profitPreset}
+          />
+        </Suspense>
       )}
 
       {activePaymentModal.show && (
@@ -731,14 +743,16 @@ export default function App() {
       )}
 
       {activeLoanDetails && (
-        <LoanDetailsModal
-          loan={activeLoanDetails}
-          onEdit={(loan) => {
-            setActiveLoanDetailsId(null);
-            setEditingLoanId(loan.id);
-          }}
-          onClose={() => setActiveLoanDetailsId(null)}
-        />
+        <Suspense fallback={modalLoadingFallback}>
+          <LoanDetailsModal
+            loan={activeLoanDetails}
+            onEdit={(loan) => {
+              setActiveLoanDetailsId(null);
+              setEditingLoanId(loan.id);
+            }}
+            onClose={() => setActiveLoanDetailsId(null)}
+          />
+        </Suspense>
       )}
 
       {isSettingsOpen && (
