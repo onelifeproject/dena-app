@@ -21,5 +21,8 @@ public class MainActivity extends BridgeActivity {
         if (controller != null) {
             controller.setAppearanceLightStatusBars(false); // white status bar icons
         }
+
+        // Schedule persistent periodic background backup checks.
+        BackupWorkScheduler.ensureScheduled(getApplicationContext());
     }
 }
