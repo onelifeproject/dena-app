@@ -45,6 +45,16 @@ const AUTO_BACKUP_META_PATH = 'Dena/auto-backup-meta.json';
 const AddLoanForm = lazy(() => import('./components/AddLoanForm'));
 const LoanDetailsModal = lazy(() => import('./components/LoanDetailsModal'));
 
+const fromBase64Utf8 = (value) => {
+  try {
+    const binary = atob(value);
+    const bytes = Uint8Array.from(binary, (char) => char.charCodeAt(0));
+    return new TextDecoder().decode(bytes);
+  } catch {
+    return value;
+  }
+};
+
 const normalizeDashboardFilters = (value) => {
   const currentDate = new Date();
   const parsedYear = Number.parseInt(value?.selectedYear, 10);
@@ -90,6 +100,7 @@ export default function App() {
   });
   const [settingsStatus, setSettingsStatus] = useState('');
   const [autoProfitSavedText, setAutoProfitSavedText] = useState('');
+  const [autoBackupSavedText, setAutoBackupSavedText] = useState('');
   const [autoBackupConfig, setAutoBackupConfig] = useState(() => getAutoBackupConfig());
   const [autoBackupIntervalDraft, setAutoBackupIntervalDraft] = useState(() => String(getAutoBackupConfig().intervalDays));
   const [lastAutoBackupAt, setLastAutoBackupAt] = useState(() => getLastAutoBackupAt());
@@ -103,6 +114,9 @@ export default function App() {
   const [pendingRestoreLastAutoBackupAt, setPendingRestoreLastAutoBackupAt] = useState(null);
   const [pendingRestoreLastManualBackupAt, setPendingRestoreLastManualBackupAt] = useState(null);
   const [pendingRestoreFileName, setPendingRestoreFileName] = useState('');
+  const [isNativeRestorePickerOpen, setIsNativeRestorePickerOpen] = useState(false);
+  const [isNativeRestoreLoading, setIsNativeRestoreLoading] = useState(false);
+  const [nativeRestoreFiles, setNativeRestoreFiles] = useState([]);
   const [isAddingLoan, setIsAddingLoan] = useState(false);
   const [editingLoanId, setEditingLoanId] = useState(null);
   const [activePaymentModal, setActivePaymentModal] = useState({ show: false, loan: null, isSettle: false });
@@ -442,6 +456,18 @@ export default function App() {
     throw new Error('অকার্যকর ব্যাকআপ ফরম্যাট');
   };
 
+  const queueRestoreData = (restoredData, fileName) => {
+    setPendingRestoreLoans(restoredData.loans);
+    setPendingRestoreProfitIntervalDays(restoredData.profitIntervalDays);
+    setPendingRestoreProfitPreset(restoredData.profitPreset);
+    setPendingRestoreAutoBackupConfig(restoredData.autoBackupConfig);
+    setPendingRestoreDashboardFilters(restoredData.dashboardFilters);
+    setPendingRestoreFirstRunSettingsShown(restoredData.firstRunSettingsShown);
+    setPendingRestoreLastAutoBackupAt(restoredData.lastAutoBackupAt);
+    setPendingRestoreLastManualBackupAt(restoredData.lastManualBackupAt);
+    setPendingRestoreFileName(fileName || '');
+  };
+
   const handleRestoreFilePick = async (event) => {
     const file = event.target.files?.[0];
     event.target.value = '';
@@ -450,18 +476,60 @@ export default function App() {
     try {
       const text = await file.text();
       const restoredData = parseRestoreContent(text);
-      setPendingRestoreLoans(restoredData.loans);
-      setPendingRestoreProfitIntervalDays(restoredData.profitIntervalDays);
-      setPendingRestoreProfitPreset(restoredData.profitPreset);
-      setPendingRestoreAutoBackupConfig(restoredData.autoBackupConfig);
-      setPendingRestoreDashboardFilters(restoredData.dashboardFilters);
-      setPendingRestoreFirstRunSettingsShown(restoredData.firstRunSettingsShown);
-      setPendingRestoreLastAutoBackupAt(restoredData.lastAutoBackupAt);
-      setPendingRestoreLastManualBackupAt(restoredData.lastManualBackupAt);
-      setPendingRestoreFileName(file.name);
+      queueRestoreData(restoredData, file.name);
     } catch (error) {
       console.error('Restore failed:', error);
       setSettingsStatus('ব্যাকআপ ফিরিয়ে আনা যায়নি। সঠিক ব্যাকআপ ফাইল দিন।');
+    }
+  };
+
+  const handleOpenNativeRestorePicker = async () => {
+    if (!Capacitor.isNativePlatform()) {
+      restoreFileInputRef.current?.click();
+      return;
+    }
+
+    setIsNativeRestorePickerOpen(true);
+    setIsNativeRestoreLoading(true);
+
+    try {
+      const listed = await Filesystem.readdir({
+        path: 'Dena',
+        directory: Directory.Documents,
+      });
+
+      const files = (listed.files || [])
+        .map((entry) => (typeof entry === 'string' ? { name: entry } : entry))
+        .filter((entry) => typeof entry?.name === 'string' && entry.name.toLowerCase().endsWith('.json'))
+        .sort((a, b) => b.name.localeCompare(a.name, undefined, { numeric: true }));
+
+      setNativeRestoreFiles(files);
+    } catch (error) {
+      console.error('Native restore list failed:', error);
+      setNativeRestoreFiles([]);
+      setSettingsStatus('Documents/Dena ফোল্ডার পাওয়া যায়নি বা পড়া যায়নি।');
+    } finally {
+      setIsNativeRestoreLoading(false);
+    }
+  };
+
+  const handleNativeRestorePick = async (entry) => {
+    if (!entry?.name) return;
+
+    try {
+      const fileResult = await Filesystem.readFile({
+        path: `Dena/${entry.name}`,
+        directory: Directory.Documents,
+      });
+      const rawText = typeof fileResult.data === 'string' ? fileResult.data : '';
+      const decodedText = fromBase64Utf8(rawText);
+      const restoredData = parseRestoreContent(decodedText);
+      setIsNativeRestorePickerOpen(false);
+      setNativeRestoreFiles([]);
+      queueRestoreData(restoredData, entry.name);
+    } catch (error) {
+      console.error('Native restore file load failed:', error);
+      setSettingsStatus('ফাইল পড়া যায়নি। অন্য ব্যাকআপ ফাইল দিয়ে চেষ্টা করুন।');
     }
   };
 
@@ -559,6 +627,7 @@ export default function App() {
     const applied = saveAutoBackupConfig({ enabled, intervalDays: autoBackupIntervalDraft });
     setAutoBackupConfig(applied);
     setAutoBackupIntervalDraft(String(applied.intervalDays));
+    setAutoBackupSavedText('');
     setSettingsStatus(
       enabled
         ? `অটো ব্যাকআপ চালু হয়েছে (${applied.intervalDays.toLocaleString('bn-BD')} দিন পরপর)।`
@@ -573,6 +642,7 @@ export default function App() {
     });
     setAutoBackupConfig(applied);
     setAutoBackupIntervalDraft(String(applied.intervalDays));
+    setAutoBackupSavedText(`সংরক্ষিত: অটো ব্যাকআপ ${applied.intervalDays.toLocaleString('bn-BD')} দিন পরপর চলবে।`);
     setSettingsStatus(`অটো ব্যাকআপ ব্যবধান সেট: ${applied.intervalDays.toLocaleString('bn-BD')} দিন।`);
   };
 
@@ -775,8 +845,11 @@ export default function App() {
             </div>
 
             <div className="settings-actions-wrap">
-              <div className="settings-interval-card settings-profit-card">
-                <p className="text-sm font-semibold">অটো মুনাফা হিসাব</p>
+              <div className="settings-card-block">
+                <div className="text-center mb-2">
+                  <h3 className="section-title settings-block-title">অটো মুনাফা হিসাব</h3>
+                </div>
+                <div className="settings-interval-card settings-profit-card">
                 <p className="text-xs text-muted settings-interval-help">
                   ১) আসল টাকা, ২) মুনাফা, ৩) মুনাফা নেওয়ার ব্যবধান (দিন) - এই ৩টি ঘর ধারাবাহিকভাবে পূরণ করুন।
                 </p>
@@ -840,9 +913,13 @@ export default function App() {
                   উদাহরণ: ৫০০০ টাকায় ৫০০ মুনাফা, ব্যবধান ৭ দিন।
                 </p>
               </div>
+              </div>
 
-              <div className="settings-interval-card settings-tools-card">
-                <p className="text-sm font-semibold">অটো ব্যাকআপ</p>
+              <div className="settings-card-block">
+                <div className="text-center mb-2">
+                  <h3 className="section-title settings-block-title">অটো ব্যাকআপ</h3>
+                </div>
+                <div className="settings-interval-card settings-tools-card">
                 <p className="text-xs text-muted settings-card-help">
                   নির্ধারিত দিন পরপর স্বয়ংক্রিয় ব্যাকআপ চালু/বন্ধ করুন।
                 </p>
@@ -878,13 +955,20 @@ export default function App() {
                     দিন সেট করুন
                   </button>
                 </div>
+                {autoBackupSavedText && (
+                  <p className="text-xs settings-auto-backup-saved-note">{autoBackupSavedText}</p>
+                )}
                 <p className="text-xs text-muted settings-card-help">
                   ডিফল্ট ১ দিন। চাইলে এখানে যেকোনো দিন সেট করতে পারবেন।
                 </p>
               </div>
+              </div>
 
-              <div className="settings-interval-card settings-tools-card">
-                <p className="text-sm font-semibold">ম্যানুয়াল ব্যাকআপ</p>
+              <div className="settings-card-block">
+                <div className="text-center mb-2">
+                  <h3 className="section-title settings-block-title">ম্যানুয়াল ব্যাকআপ</h3>
+                </div>
+                <div className="settings-interval-card settings-tools-card">
                 <p className="text-xs text-muted settings-card-help">
                   প্রয়োজন হলে এখনই পুরো অ্যাপের ব্যাকআপ ফাইল তৈরি করুন।
                 </p>
@@ -903,25 +987,42 @@ export default function App() {
                   </button>
                 </div>
               </div>
+              </div>
 
-              <div className="settings-interval-card settings-tools-card">
-                <p className="text-sm font-semibold">রিস্টোর</p>
+              <div className="settings-card-block">
+                <div className="text-center mb-2">
+                  <h3 className="section-title settings-block-title">রিস্টোর</h3>
+                </div>
+                <div className="settings-interval-card settings-tools-card">
                 <p className="text-xs text-muted settings-card-help">
                   ব্যাকআপ ফাইল থেকে আগের সব ডেটা পুনরুদ্ধার করুন।
                 </p>
                 <div className="settings-backup-actions">
+                  {Capacitor.isNativePlatform() && (
+                    <button
+                      type="button"
+                      className="btn btn-primary settings-action-btn"
+                      onClick={handleOpenNativeRestorePicker}
+                    >
+                      Dena ফোল্ডার থেকে রিস্টোর
+                    </button>
+                  )}
                   <button
                     type="button"
                     className="btn btn-secondary settings-action-btn"
                     onClick={() => restoreFileInputRef.current?.click()}
                   >
-                    ব্যাকআপ ফিরিয়ে আনুন
+                    ফাইল বেছে রিস্টোর
                   </button>
                 </div>
               </div>
+              </div>
 
-              <div className="settings-interval-card settings-tools-card">
-                <p className="text-sm font-semibold">টেস্ট অপশন</p>
+              <div className="settings-card-block">
+                <div className="text-center mb-2">
+                  <h3 className="section-title settings-block-title">টেস্ট অপশন</h3>
+                </div>
+                <div className="settings-interval-card settings-tools-card">
                 <p className="text-xs text-muted settings-card-help">
                   নোটিফিকেশন টেস্ট ও ডিবাগ অপশন চালু/বন্ধ করুন।
                 </p>
@@ -932,6 +1033,7 @@ export default function App() {
                 >
                   {isSettingsTestOpen ? 'টেস্ট অপশন বন্ধ করুন' : 'টেস্ট অপশন খুলুন'}
                 </button>
+              </div>
               </div>
             </div>
 
@@ -980,6 +1082,48 @@ export default function App() {
               </button>
               <button type="button" className="btn btn-primary" onClick={handleRestoreConfirm}>
                 নিশ্চিত করুন
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isNativeRestorePickerOpen && (
+        <div className="modal-overlay" onClick={() => setIsNativeRestorePickerOpen(false)}>
+          <div className="modal-content restore-file-picker-modal" onClick={(event) => event.stopPropagation()}>
+            <h2 className="text-xl font-bold text-brand-gradient mb-4">Documents/Dena ব্যাকআপ</h2>
+            <p className="text-sm text-secondary restore-confirm-text">
+              রিস্টোর করার জন্য একটি ব্যাকআপ ফাইল বেছে নিন।
+            </p>
+
+            {isNativeRestoreLoading ? (
+              <p className="text-xs text-muted restore-file-name">ব্যাকআপ ফাইল লোড হচ্ছে...</p>
+            ) : nativeRestoreFiles.length > 0 ? (
+              <div className="restore-picker-list">
+                {nativeRestoreFiles.map((entry) => (
+                  <button
+                    key={entry.name}
+                    type="button"
+                    className="btn btn-secondary restore-picker-item"
+                    onClick={() => handleNativeRestorePick(entry)}
+                  >
+                    {entry.name}
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <p className="text-xs text-muted restore-file-name">
+                কোনো JSON ব্যাকআপ পাওয়া যায়নি। আগে ব্যাকআপ নিন বা ফাইল বেছে রিস্টোর ব্যবহার করুন।
+              </p>
+            )}
+
+            <div className="flex gap-3 mt-6 mobile-btn-stack">
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={() => setIsNativeRestorePickerOpen(false)}
+              >
+                বন্ধ করুন
               </button>
             </div>
           </div>

@@ -1268,6 +1268,14 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
   background: rgba(255, 255, 255, 0.025);
 }
 
+.settings-card-block {
+  grid-column: 1 / -1;
+}
+
+.settings-block-title {
+  font-size: 1.05rem;
+}
+
 .settings-card-help {
   margin-top: 0.38rem;
   margin-bottom: 0.6rem;
@@ -1292,6 +1300,17 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 0.5rem;
+}
+
+.settings-auto-backup-saved-note {
+  margin-top: 0.55rem;
+  padding: 0.52rem 0.62rem;
+  border-radius: 8px;
+  border: 1px solid rgba(139, 92, 246, 0.42);
+  background: rgba(139, 92, 246, 0.14);
+  color: #ddd6fe;
+  line-height: 1.45;
+  text-align: center;
 }
 
 .settings-test-toggle-btn {
@@ -1327,6 +1346,10 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
   max-width: 520px;
 }
 
+.restore-file-picker-modal {
+  max-width: 560px;
+}
+
 .restore-confirm-text {
   line-height: 1.5;
 }
@@ -1334,6 +1357,20 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
 .restore-file-name {
   margin-top: 0.6rem;
   word-break: break-word;
+}
+
+.restore-picker-list {
+  margin-top: 0.75rem;
+  display: grid;
+  gap: 0.55rem;
+  max-height: min(48vh, 360px);
+  overflow-y: auto;
+  padding-right: 0.2rem;
+}
+
+.restore-picker-item {
+  text-align: left;
+  justify-content: flex-start;
 }
 
 .crop-modal-content {
@@ -1581,6 +1618,12 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
   }
 
   .restore-confirm-modal {
+    max-width: 100%;
+    width: 100%;
+    padding: 1.35rem 1rem 1.2rem 1rem;
+  }
+
+  .restore-file-picker-modal {
     max-width: 100%;
     width: 100%;
     padding: 1.35rem 1rem 1.2rem 1rem;
