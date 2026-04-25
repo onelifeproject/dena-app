@@ -1,7 +1,18 @@
 # Dena (`dena-app`)
 
 Dena হলো Bengali loan, interest, usury, and munafa management app for personal lenders and small finance tracking.  
-React + Vite + Capacitor + Android WorkManager দিয়ে build করা professional Web/Android solution।
+
+<p align="center">
+  <img src="https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=white" alt="React 19" />
+  <img src="https://img.shields.io/badge/Vite-8-646CFF?logo=vite&logoColor=white" alt="Vite 8" />
+  <img src="https://img.shields.io/badge/Capacitor-8-119EFF?logo=capacitor&logoColor=white" alt="Capacitor 8" />
+  <img src="https://img.shields.io/badge/Android-Supported-3DDC84?logo=android&logoColor=white" alt="Android Supported" />
+</p>
+<p align="center">
+  <img src="https://img.shields.io/badge/WorkManager-androidx.work-4285F4" alt="Android WorkManager" />
+  <img src="https://img.shields.io/badge/ESLint-Code%20Quality-4B32C3?logo=eslint&logoColor=white" alt="ESLint" />
+  <img src="https://img.shields.io/badge/GitHub%20Actions-Release%20APK-2088FF?logo=githubactions&logoColor=white" alt="GitHub Actions Release APK" />
+</p>
 
 ## Tech Stack
 
