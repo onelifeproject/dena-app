@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback, lazy, Suspense } from 'react'
 import { Capacitor } from '@capacitor/core';
 import { App as CapacitorApp } from '@capacitor/app';
 import { Directory, Filesystem } from '@capacitor/filesystem';
+import { Share } from '@capacitor/share';
 import { StatusBar, Style } from '@capacitor/status-bar';
 import Dashboard from './components/Dashboard';
 import PaymentModal from './components/PaymentModal';
@@ -42,6 +43,11 @@ const LAST_MANUAL_BACKUP_AT_KEY = 'denaLastManualBackupAt';
 const AUTO_BACKUP_SNAPSHOT_KEY = 'denaAutoBackupSnapshot';
 const AUTO_BACKUP_SOURCE_PATH = 'Dena/auto-backup-source.json';
 const AUTO_BACKUP_META_PATH = 'Dena/auto-backup-meta.json';
+const REPO_URL = 'https://github.com/onelifeproject/dena-app';
+const RELEASE_LATEST_API_URL = 'https://api.github.com/repos/onelifeproject/dena-app/releases/latest';
+const UPDATE_LAST_CHECK_KEY = 'denaLastUpdateCheckAt';
+const CURRENT_APP_VERSION_KEY = 'denaCurrentAppVersion';
+const UPDATE_CHECK_INTERVAL_MS = 12 * 60 * 60 * 1000;
 const AddLoanForm = lazy(() => import('./components/AddLoanForm'));
 const LoanDetailsModal = lazy(() => import('./components/LoanDetailsModal'));
 
@@ -53,6 +59,41 @@ const fromBase64Utf8 = (value) => {
   } catch {
     return value;
   }
+};
+
+const normalizeVersion = (value) => String(value || '').trim().replace(/^v/i, '');
+const stripDefaultReleaseNote = (value) => String(value || '')
+  .split('\n')
+  .map((line) => line.trim())
+  .filter((line) => line && line !== 'Automated Android release build.')
+  .join('\n')
+  .trim();
+
+const compareVersions = (left, right) => {
+  const leftParts = normalizeVersion(left).split('.').map((part) => Number.parseInt(part, 10) || 0);
+  const rightParts = normalizeVersion(right).split('.').map((part) => Number.parseInt(part, 10) || 0);
+  const maxLen = Math.max(leftParts.length, rightParts.length);
+  for (let index = 0; index < maxLen; index += 1) {
+    const leftValue = leftParts[index] || 0;
+    const rightValue = rightParts[index] || 0;
+    if (leftValue > rightValue) return 1;
+    if (leftValue < rightValue) return -1;
+  }
+  return 0;
+};
+
+const formatBytes = (bytesValue) => {
+  const bytes = Number(bytesValue || 0);
+  if (!Number.isFinite(bytes) || bytes <= 0) return '0 B';
+  const units = ['B', 'KB', 'MB', 'GB'];
+  let unitIndex = 0;
+  let size = bytes;
+  while (size >= 1024 && unitIndex < units.length - 1) {
+    size /= 1024;
+    unitIndex += 1;
+  }
+  const precision = unitIndex === 0 ? 0 : 1;
+  return `${size.toFixed(precision)} ${units[unitIndex]}`;
 };
 
 const normalizeDashboardFilters = (value) => {
@@ -117,6 +158,15 @@ export default function App() {
   const [isNativeRestorePickerOpen, setIsNativeRestorePickerOpen] = useState(false);
   const [isNativeRestoreLoading, setIsNativeRestoreLoading] = useState(false);
   const [nativeRestoreFiles, setNativeRestoreFiles] = useState([]);
+  const [currentAppVersion, setCurrentAppVersion] = useState(() => localStorage.getItem(CURRENT_APP_VERSION_KEY) || '');
+  const [updateInfo, setUpdateInfo] = useState(null);
+  const [isCheckingUpdate, setIsCheckingUpdate] = useState(false);
+  const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
+  const [isUpdateDownloading, setIsUpdateDownloading] = useState(false);
+  const [updateDownloadProgress, setUpdateDownloadProgress] = useState(0);
+  const [updateDownloadedApkUri, setUpdateDownloadedApkUri] = useState('');
+  const [updateDownloadedFileName, setUpdateDownloadedFileName] = useState('');
+  const [updateDownloadBytesText, setUpdateDownloadBytesText] = useState('');
   const [isAddingLoan, setIsAddingLoan] = useState(false);
   const [editingLoanId, setEditingLoanId] = useState(null);
   const [activePaymentModal, setActivePaymentModal] = useState({ show: false, loan: null, isSettle: false });
@@ -132,6 +182,10 @@ export default function App() {
   const isDeleteModalOpenRef = useRef(activeDeleteModal.show);
   const activeLoanDetailsIdRef = useRef(activeLoanDetailsId);
   const isAutoBackupRunningRef = useRef(false);
+  const updateDownloadRequestRef = useRef(null);
+  const isUpdateModalOpenRef = useRef(isUpdateModalOpen);
+  const isNativeRestorePickerOpenRef = useRef(isNativeRestorePickerOpen);
+  const isUpdateDownloadingRef = useRef(isUpdateDownloading);
 
   useEffect(() => {
     isSettingsOpenRef.current = isSettingsOpen;
@@ -141,7 +195,10 @@ export default function App() {
     isPaymentModalOpenRef.current = activePaymentModal.show;
     isDeleteModalOpenRef.current = activeDeleteModal.show;
     activeLoanDetailsIdRef.current = activeLoanDetailsId;
-  }, [activeDeleteModal.show, activeLoanDetailsId, activePaymentModal.show, editingLoanId, isAddingLoan, isSettingsOpen, pendingRestoreLoans]);
+    isUpdateModalOpenRef.current = isUpdateModalOpen;
+    isNativeRestorePickerOpenRef.current = isNativeRestorePickerOpen;
+    isUpdateDownloadingRef.current = isUpdateDownloading;
+  }, [activeDeleteModal.show, activeLoanDetailsId, activePaymentModal.show, editingLoanId, isAddingLoan, isNativeRestorePickerOpen, isSettingsOpen, isUpdateDownloading, isUpdateModalOpen, pendingRestoreLoans]);
 
   useEffect(() => {
     const setupSystemBars = async () => {
@@ -178,6 +235,20 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    const loadCurrentVersion = async () => {
+      try {
+        const info = await CapacitorApp.getInfo();
+        const normalized = normalizeVersion(info?.version || '0.0.0');
+        setCurrentAppVersion(normalized);
+        localStorage.setItem(CURRENT_APP_VERSION_KEY, normalized);
+      } catch {
+        setCurrentAppVersion((prev) => prev || '0.0.0');
+      }
+    };
+    loadCurrentVersion();
+  }, []);
+
+  useEffect(() => {
     if (!notificationsEnabled) return;
     syncLoanNotifications(loans);
   }, [loans, notificationsEnabled]);
@@ -193,6 +264,18 @@ export default function App() {
 
         if (isDeleteModalOpenRef.current) {
           setActiveDeleteModal({ show: false, loan: null });
+          return;
+        }
+
+        if (isNativeRestorePickerOpenRef.current) {
+          setIsNativeRestorePickerOpen(false);
+          return;
+        }
+
+        if (isUpdateModalOpenRef.current) {
+          if (!isUpdateDownloadingRef.current) {
+            setIsUpdateModalOpen(false);
+          }
           return;
         }
 
@@ -255,6 +338,13 @@ export default function App() {
       disposed = true;
       cleanup();
     };
+  }, []);
+
+  useEffect(() => () => {
+    if (updateDownloadRequestRef.current) {
+      updateDownloadRequestRef.current.abort();
+      updateDownloadRequestRef.current = null;
+    }
   }, []);
 
   const handleAddLoanSave = (loanData) => {
@@ -426,6 +516,193 @@ export default function App() {
   }, [buildBackupPayload]);
 
   const handleBackup = async () => runBackup({ isAuto: false });
+
+  const getCurrentVersion = useCallback(async () => {
+    try {
+      const info = await CapacitorApp.getInfo();
+      return normalizeVersion(info?.version || '');
+    } catch {
+      return normalizeVersion(currentAppVersion || '0.0.0');
+    }
+  }, [currentAppVersion]);
+
+  const fetchLatestRelease = useCallback(async () => {
+    const response = await fetch(RELEASE_LATEST_API_URL, {
+      headers: { Accept: 'application/vnd.github+json' },
+    });
+    if (!response.ok) {
+      throw new Error(`release-api-${response.status}`);
+    }
+    const payload = await response.json();
+    const tagName = String(payload?.tag_name || '');
+    const normalizedLatestVersion = normalizeVersion(tagName);
+    const assets = Array.isArray(payload?.assets) ? payload.assets : [];
+    const apkAsset = assets.find((asset) => String(asset?.name || '').toLowerCase().endsWith('.apk'));
+
+    return {
+      latestTag: tagName || `v${normalizedLatestVersion}`,
+      latestVersion: normalizedLatestVersion,
+      releaseUrl: payload?.html_url || '',
+      releaseNotes: stripDefaultReleaseNote(payload?.body || ''),
+      apkUrl: apkAsset?.browser_download_url || '',
+      apkName: apkAsset?.name || '',
+    };
+  }, []);
+
+  const checkForAppUpdate = useCallback(async ({ manual = false } = {}) => {
+    if (isCheckingUpdate) return;
+    setIsCheckingUpdate(true);
+    try {
+      const [currentVersion, latestRelease] = await Promise.all([
+        getCurrentVersion(),
+        fetchLatestRelease(),
+      ]);
+
+      setCurrentAppVersion(currentVersion);
+      localStorage.setItem(UPDATE_LAST_CHECK_KEY, String(Date.now()));
+
+      if (!latestRelease.latestVersion) {
+        if (manual) setSettingsStatus('সর্বশেষ রিলিজ তথ্য পাওয়া যায়নি। পরে আবার চেষ্টা করুন।');
+        return;
+      }
+
+      const hasUpdate = compareVersions(latestRelease.latestVersion, currentVersion) > 0;
+      if (!hasUpdate) {
+        if (manual) setSettingsStatus(`আপনি সর্বশেষ ভার্সনে আছেন (v${currentVersion})।`);
+        return;
+      }
+
+      setUpdateInfo({
+        ...latestRelease,
+        currentVersion,
+      });
+      setUpdateDownloadedApkUri('');
+      setUpdateDownloadedFileName('');
+      setUpdateDownloadProgress(0);
+      setUpdateDownloadBytesText('');
+      setIsUpdateModalOpen(true);
+      if (manual) {
+        setSettingsStatus(`নতুন আপডেট পাওয়া গেছে: ${latestRelease.latestTag}`);
+      }
+    } catch (error) {
+      console.error('Update check failed:', error);
+      if (manual) {
+        setSettingsStatus('আপডেট চেক করা যায়নি। ইন্টারনেট ঠিক আছে কিনা দেখে আবার চেষ্টা করুন।');
+      }
+    } finally {
+      setIsCheckingUpdate(false);
+    }
+  }, [fetchLatestRelease, getCurrentVersion, isCheckingUpdate]);
+
+  const downloadApkBlob = useCallback((url) => new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    updateDownloadRequestRef.current = xhr;
+    xhr.open('GET', url, true);
+    xhr.responseType = 'blob';
+    xhr.onprogress = (event) => {
+      if (!event.lengthComputable) return;
+      const progress = Math.round((event.loaded / event.total) * 100);
+      setUpdateDownloadProgress(progress);
+      setUpdateDownloadBytesText(
+        `${formatBytes(event.loaded)} / ${formatBytes(event.total)}`,
+      );
+    };
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        resolve(xhr.response);
+        return;
+      }
+      reject(new Error(`download-failed-${xhr.status}`));
+    };
+    xhr.onerror = () => reject(new Error('download-network-error'));
+    xhr.onabort = () => reject(new Error('download-aborted'));
+    xhr.send();
+  }), []);
+
+  const blobToBase64 = useCallback((blob) => new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const result = String(reader.result || '');
+      const base64Data = result.includes(',') ? result.split(',')[1] : result;
+      resolve(base64Data);
+    };
+    reader.onerror = () => reject(new Error('blob-read-failed'));
+    reader.readAsDataURL(blob);
+  }), []);
+
+  const handleDownloadUpdate = async () => {
+    if (!updateInfo?.apkUrl || isUpdateDownloading) return;
+    setIsUpdateDownloading(true);
+    setUpdateDownloadedApkUri('');
+    setUpdateDownloadedFileName('');
+    setUpdateDownloadProgress(0);
+    setUpdateDownloadBytesText('');
+    try {
+      const apkBlob = await downloadApkBlob(updateInfo.apkUrl);
+      const fileName = updateInfo.apkName || `Dena-v${updateInfo.latestVersion}.apk`;
+      const base64Data = await blobToBase64(apkBlob);
+      await Filesystem.writeFile({
+        path: `Dena/updates/${fileName}`,
+        data: base64Data,
+        directory: Directory.Documents,
+        recursive: true,
+      });
+      const fileUri = await Filesystem.getUri({
+        path: `Dena/updates/${fileName}`,
+        directory: Directory.Documents,
+      });
+      setUpdateDownloadProgress(100);
+      setUpdateDownloadBytesText('ডাউনলোড সম্পন্ন');
+      setUpdateDownloadedApkUri(fileUri.uri);
+      setUpdateDownloadedFileName(fileName);
+      setSettingsStatus('আপডেট ডাউনলোড সম্পন্ন। এখন ইনস্টল করুন।');
+    } catch (error) {
+      console.error('Update download failed:', error);
+      const isAborted = String(error?.message || '').includes('aborted');
+      setSettingsStatus(isAborted ? 'ডাউনলোড বাতিল হয়েছে।' : 'আপডেট ডাউনলোড করা যায়নি। আবার চেষ্টা করুন।');
+    } finally {
+      updateDownloadRequestRef.current = null;
+      setIsUpdateDownloading(false);
+    }
+  };
+
+  const handleCancelUpdateDownload = () => {
+    const request = updateDownloadRequestRef.current;
+    if (!request) return;
+    request.abort();
+    updateDownloadRequestRef.current = null;
+    setIsUpdateDownloading(false);
+  };
+
+  const handleInstallUpdate = async () => {
+    if (!updateDownloadedApkUri) return;
+    try {
+      await Share.share({
+        title: 'Dena আপডেট',
+        text: 'আপডেট APK ইনস্টল করতে Open/Package Installer বেছে নিন।',
+        url: updateDownloadedApkUri,
+        dialogTitle: 'আপডেট ইনস্টল করুন',
+      });
+    } catch (error) {
+      console.error('Update install handoff failed:', error);
+      if (updateInfo?.releaseUrl) {
+        window.open(updateInfo.releaseUrl, '_blank');
+      }
+    }
+  };
+
+  const handleCloseUpdateModal = () => {
+    if (isUpdateDownloading) return;
+    setIsUpdateModalOpen(false);
+  };
+
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform()) return;
+    const lastCheckAt = Number(localStorage.getItem(UPDATE_LAST_CHECK_KEY) || 0);
+    const isDue = !lastCheckAt || Number.isNaN(lastCheckAt) || Date.now() - lastCheckAt >= UPDATE_CHECK_INTERVAL_MS;
+    if (!isDue) return;
+    checkForAppUpdate({ manual: false });
+  }, [checkForAppUpdate]);
 
   const parseRestoreContent = (content) => {
     const parsed = JSON.parse(content);
@@ -1020,6 +1297,46 @@ export default function App() {
 
               <div className="settings-card-block">
                 <div className="text-center mb-2">
+                  <h3 className="section-title settings-block-title">অ্যাপ আপডেট</h3>
+                </div>
+                <div className="settings-interval-card settings-tools-card">
+                  <p className="text-xs text-muted settings-card-help">
+                    বর্তমান ভার্সন: v{currentAppVersion || '...'}
+                  </p>
+                  <p className="text-xs settings-card-help">
+                    <a
+                      href={REPO_URL}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="settings-link"
+                    >
+                      GitHub
+                    </a>
+                  </p>
+                  <div className="settings-backup-actions">
+                    <button
+                      type="button"
+                      className="btn btn-secondary settings-action-btn"
+                      onClick={() => checkForAppUpdate({ manual: true })}
+                      disabled={isCheckingUpdate}
+                    >
+                      {isCheckingUpdate ? 'চেক হচ্ছে...' : 'আপডেট চেক করুন'}
+                    </button>
+                    {updateInfo && (
+                      <button
+                        type="button"
+                        className="btn btn-primary settings-action-btn"
+                        onClick={() => setIsUpdateModalOpen(true)}
+                      >
+                        আপডেট দেখুন
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="settings-card-block">
+                <div className="text-center mb-2">
                   <h3 className="section-title settings-block-title">টেস্ট অপশন</h3>
                 </div>
                 <div className="settings-interval-card settings-tools-card">
@@ -1062,6 +1379,89 @@ export default function App() {
                 />
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {isUpdateModalOpen && updateInfo && (
+        <div className="modal-overlay" onClick={handleCloseUpdateModal}>
+          <div className="modal-content update-modal-content" onClick={(event) => event.stopPropagation()}>
+            <h2 className="text-xl font-bold text-brand-gradient mb-4">নতুন আপডেট পাওয়া গেছে</h2>
+            <p className="text-sm text-secondary update-version-line">
+              বর্তমান ভার্সন: <strong>v{updateInfo.currentVersion || '0.0.0'}</strong>
+            </p>
+            <p className="text-sm text-secondary update-version-line">
+              সর্বশেষ ভার্সন: <strong>{updateInfo.latestTag}</strong>
+            </p>
+
+            {updateInfo.releaseNotes && (
+              <div className="update-notes-box">
+                <p className="text-xs text-muted">
+                  {updateInfo.releaseNotes.split('\n').slice(0, 5).join('\n')}
+                </p>
+              </div>
+            )}
+
+            {isUpdateDownloading && (
+              <div className="update-progress-wrap">
+                <div className="update-progress-bar">
+                  <div
+                    className="update-progress-fill"
+                    style={{ width: `${Math.max(2, updateDownloadProgress)}%` }}
+                  />
+                </div>
+                <p className="text-xs text-muted update-progress-text">
+                  ডাউনলোড হচ্ছে: {updateDownloadProgress.toLocaleString('bn-BD')}%
+                  {updateDownloadBytesText ? ` (${updateDownloadBytesText})` : ''}
+                </p>
+              </div>
+            )}
+
+            {updateDownloadedApkUri && (
+              <p className="text-xs settings-auto-backup-saved-note">
+                ডাউনলোড সম্পন্ন: {updateDownloadedFileName}
+              </p>
+            )}
+
+            <div className="settings-backup-actions mt-6">
+              {!updateDownloadedApkUri ? (
+                <button
+                  type="button"
+                  className="btn btn-primary settings-action-btn"
+                  onClick={handleDownloadUpdate}
+                  disabled={isUpdateDownloading || !updateInfo.apkUrl}
+                >
+                  {isUpdateDownloading ? 'ডাউনলোড হচ্ছে...' : 'এখন আপডেট ডাউনলোড করুন'}
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  className="btn btn-primary settings-action-btn"
+                  onClick={handleInstallUpdate}
+                >
+                  ইনস্টল করুন
+                </button>
+              )}
+
+              {isUpdateDownloading ? (
+                <button
+                  type="button"
+                  className="btn btn-secondary settings-action-btn"
+                  onClick={handleCancelUpdateDownload}
+                >
+                  ডাউনলোড বাতিল
+                </button>
+              ) : null}
+
+              <button
+                type="button"
+                className="btn btn-secondary settings-action-btn"
+                onClick={handleCloseUpdateModal}
+                disabled={isUpdateDownloading}
+              >
+                পরে
+              </button>
+            </div>
           </div>
         </div>
       )}
