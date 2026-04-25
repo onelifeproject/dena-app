@@ -1,10 +1,10 @@
-# AGENTS Guide for `usury-app`
+# AGENTS Guide for `dena-app`
 
 This file is the first-stop context for any LLM agent working in this repository.
 
 ## Project Purpose
 
-`usury-app` is a React + Vite single-page app for tracking interval-based interest loans in Bengali.
+`dena-app` is a React + Vite single-page app for tracking interval-based interest loans in Bengali.
 It runs as:
 
 - a web app in browser, and
@@ -35,7 +35,7 @@ There is no backend API. All business data is stored in browser/app `localStorag
    - optional crop (`DocumentCropModal`)
    - compression (`src/utils/imageCompression.js`)
    - store compressed image metadata in loan record
-6. `loanManager.js` mutates loan array and persists to `localStorage` key `usuryLoans`.
+6. `loanManager.js` mutates loan array and persists to `localStorage` key `denaLoans` (legacy `usuryLoans` is auto-migrated).
 7. UI re-renders from state updates in `App.jsx`.
 
 ## Repository Map
@@ -57,7 +57,7 @@ There is no backend API. All business data is stored in browser/app `localStorag
 
 ## Domain Model (Current Data Contract)
 
-Loan object (stored in `usuryLoans` array):
+Loan object (stored in `denaLoans` array):
 
 - `id`: string
 - `name`: string
@@ -76,14 +76,15 @@ Loan object (stored in `usuryLoans` array):
 
 Settings and UI state values (stored separately):
 
-- `usuryProfitIntervalDays`: number (default `7`)
-- `usuryProfitPreset`: object `{ principal, interest }` (default `5000 -> 500`)
-- `usuryAutoBackupConfig`: object `{ enabled, intervalDays }` (default `enabled: false`, `intervalDays: 1`)
-- `usuryLastAutoBackupAt`: ISO datetime string
-- `usuryLastManualBackupAt`: ISO datetime string
-- `usuryFirstRunSettingsShown`: `"1"` after first-run settings auto-open is shown
-- `usuryDashboardFilters`: object `{ activeTab, selectedYear, selectedMonth }`
-- `usuryAutoBackupSnapshot`: web-only local auto-backup JSON snapshot (used instead of auto file download)
+- `denaProfitIntervalDays`: number (default `7`)
+- `denaProfitPreset`: object `{ principal, interest }` (default `5000 -> 500`)
+- `denaAutoBackupConfig`: object `{ enabled, intervalDays }` (default `enabled: false`, `intervalDays: 1`)
+- `denaLastAutoBackupAt`: ISO datetime string
+- `denaLastManualBackupAt`: ISO datetime string
+- `denaFirstRunSettingsShown`: `"1"` after first-run settings auto-open is shown
+- `denaDashboardFilters`: object `{ activeTab, selectedYear, selectedMonth }`
+- `denaAutoBackupSnapshot`: web-only local auto-backup JSON snapshot (used instead of auto file download)
+- Legacy `usury...` keys are read once and auto-migrated to `dena...` keys.
 
 Payment entry:
 
@@ -101,7 +102,7 @@ Payment entry:
   - appends payment type `INTEREST`
   - advances `nextPaymentDate` by configured interval days from current `nextPaymentDate`
 - Interval update from Settings:
-  - saves `usuryProfitIntervalDays` (1-365, default 7)
+  - saves `denaProfitIntervalDays` (1-365, default 7)
   - recalculates all `ACTIVE` loans' `nextPaymentDate` immediately
 - Full settlement:
   - appends payment type `SETTLEMENT`
@@ -175,7 +176,7 @@ Payment entry:
 - Added auto-updating Bengali footer year range (base year ২০২৬).
 - Added editable Auto Munafa preset (`principal -> interest`) and connected it to Add/Edit loan auto-calculation.
 - Auto Munafa save now also applies interval-day changes to active loans immediately.
-- Added first-run-only Settings modal auto-open via `usuryFirstRunSettingsShown`.
+- Added first-run-only Settings modal auto-open via `denaFirstRunSettingsShown`.
 - Added richer Settings feedback: highlighted saved-status text for Auto Munafa values.
 - Added Auto Backup configuration:
   - instant toggle save (no extra save button for on/off)
@@ -236,7 +237,7 @@ Workflow: `.github/workflows/build-android.yml` (`Android Signed Release Build`)
 ## Guardrails for Future Agents
 
 - Do not introduce backend/API assumptions unless explicitly requested.
-- Preserve existing `localStorage` key (`usuryLoans`) unless adding a migration path.
+- Keep `localStorage` writes on `dena...` keys; maintain read fallback for legacy `usury...` keys.
 - Treat `src/utils/loanManager.js` as source of truth for business logic.
 - Keep Bengali UX text and locale behavior unless user requests language changes.
 - If changing loan schema, update create/read/update paths and backward compatibility.

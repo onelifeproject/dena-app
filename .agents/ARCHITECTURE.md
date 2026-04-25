@@ -1,6 +1,6 @@
 # Architecture and Implementation Notes
 
-This document explains how `usury-app` works internally so engineers and coding agents can make safe changes.
+This document explains how `dena-app` works internally so engineers and coding agents can make safe changes.
 
 ## 1) High-Level Architecture
 
@@ -18,7 +18,7 @@ No server, API, or database is currently part of the architecture.
 - Browser loads `index.html`, then `src/main.jsx`.
 - `main.jsx` mounts `<App />` in React StrictMode.
 - `App.jsx` initializes `loans` from `getLoans()` in state initializer.
-- `getLoans()` reads and parses `localStorage.getItem("usuryLoans")`.
+- `getLoans()` reads and parses `localStorage.getItem("denaLoans")` (with legacy fallback from `usuryLoans`).
 
 Important: `getLoans()` assumes valid JSON and has no parse fallback, so malformed storage can throw.
 
@@ -51,8 +51,8 @@ Pattern used:
 
 ### Storage key
 
-- Constant key used directly: `usuryLoans`
-- Settings key: `usuryProfitIntervalDays` (default `7`, bounded `1..365`)
+- Constant key used directly: `denaLoans` (legacy: `usuryLoans`)
+- Settings key: `denaProfitIntervalDays` (default `7`, bounded `1..365`, legacy fallback supported)
 
 ### ID generation
 
@@ -83,7 +83,7 @@ Pattern used:
 
 ### Profit interval setting logic
 
-- `getProfitIntervalDays()` reads `usuryProfitIntervalDays` with fallback to `7`.
+- `getProfitIntervalDays()` reads `denaProfitIntervalDays` (legacy fallback to `usuryProfitIntervalDays`) with fallback to `7`.
 - `saveProfitIntervalDays(days)` normalizes and persists value.
 - `applyProfitIntervalToActiveLoans(days)`:
   - persists the new interval
