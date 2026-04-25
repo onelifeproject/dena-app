@@ -1,11 +1,45 @@
 export const generateId = () => Math.random().toString(36).substr(2, 9);
 const PROFIT_INTERVAL_KEY = 'usuryProfitIntervalDays';
 const DEFAULT_PROFIT_INTERVAL_DAYS = 7;
+const PROFIT_PRESET_KEY = 'usuryProfitPreset';
+const DEFAULT_PROFIT_PRESET = {
+  principal: 5000,
+  interest: 500,
+};
+const AUTO_BACKUP_CONFIG_KEY = 'usuryAutoBackupConfig';
+const LAST_AUTO_BACKUP_AT_KEY = 'usuryLastAutoBackupAt';
+const DEFAULT_AUTO_BACKUP_CONFIG = {
+  enabled: false,
+  intervalDays: 1,
+};
 
 const normalizeProfitIntervalDays = (value) => {
   const parsed = Number.parseInt(value, 10);
   if (Number.isNaN(parsed)) return DEFAULT_PROFIT_INTERVAL_DAYS;
   return Math.min(365, Math.max(1, parsed));
+};
+
+const normalizeProfitPreset = (value) => {
+  const parsedPrincipal = Number.parseInt(value?.principal, 10);
+  const parsedInterest = Number.parseInt(value?.interest, 10);
+
+  const principal = Number.isNaN(parsedPrincipal)
+    ? DEFAULT_PROFIT_PRESET.principal
+    : Math.min(100000000, Math.max(1, parsedPrincipal));
+  const interest = Number.isNaN(parsedInterest)
+    ? DEFAULT_PROFIT_PRESET.interest
+    : Math.min(100000000, Math.max(1, parsedInterest));
+
+  return { principal, interest };
+};
+
+const normalizeAutoBackupConfig = (value) => {
+  const parsedDays = Number.parseInt(value?.intervalDays, 10);
+  const intervalDays = Number.isNaN(parsedDays) ? 1 : Math.min(365, Math.max(1, parsedDays));
+  return {
+    enabled: Boolean(value?.enabled),
+    intervalDays,
+  };
 };
 
 export const getLoans = () => {
@@ -27,6 +61,65 @@ export const saveProfitIntervalDays = (days) => {
   const normalized = normalizeProfitIntervalDays(days);
   localStorage.setItem(PROFIT_INTERVAL_KEY, String(normalized));
   return normalized;
+};
+
+export const getProfitPreset = () => {
+  const raw = localStorage.getItem(PROFIT_PRESET_KEY);
+  if (!raw) return DEFAULT_PROFIT_PRESET;
+
+  try {
+    const parsed = JSON.parse(raw);
+    return normalizeProfitPreset(parsed);
+  } catch {
+    return DEFAULT_PROFIT_PRESET;
+  }
+};
+
+export const saveProfitPreset = (preset) => {
+  const normalized = normalizeProfitPreset(preset);
+  localStorage.setItem(PROFIT_PRESET_KEY, JSON.stringify(normalized));
+  return normalized;
+};
+
+export const getAutoBackupConfig = () => {
+  const raw = localStorage.getItem(AUTO_BACKUP_CONFIG_KEY);
+  if (!raw) return DEFAULT_AUTO_BACKUP_CONFIG;
+  try {
+    return normalizeAutoBackupConfig(JSON.parse(raw));
+  } catch {
+    return DEFAULT_AUTO_BACKUP_CONFIG;
+  }
+};
+
+export const saveAutoBackupConfig = (config) => {
+  const normalized = normalizeAutoBackupConfig(config);
+  localStorage.setItem(AUTO_BACKUP_CONFIG_KEY, JSON.stringify(normalized));
+  return normalized;
+};
+
+export const getLastAutoBackupAt = () => {
+  const raw = localStorage.getItem(LAST_AUTO_BACKUP_AT_KEY);
+  if (!raw) return '';
+  const parsed = new Date(raw);
+  if (Number.isNaN(parsed.getTime())) return '';
+  return parsed.toISOString();
+};
+
+export const saveLastAutoBackupAt = (dateValue = new Date()) => {
+  const parsed = new Date(dateValue);
+  if (Number.isNaN(parsed.getTime())) return '';
+  const value = parsed.toISOString();
+  localStorage.setItem(LAST_AUTO_BACKUP_AT_KEY, value);
+  return value;
+};
+
+export const calculateInterestFromPreset = (principalAmount, preset = getProfitPreset()) => {
+  const principal = Number(principalAmount);
+  if (!Number.isFinite(principal) || principal <= 0) return 0;
+
+  const normalizedPreset = normalizeProfitPreset(preset);
+  const interest = (principal * normalizedPreset.interest) / normalizedPreset.principal;
+  return Math.max(0, Math.round(interest));
 };
 
 const toStartOfDay = (dateValue) => {
