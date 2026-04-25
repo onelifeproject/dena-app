@@ -1,7 +1,15 @@
 # Dena (`dena-app`)
 
-বাংলা UI-ভিত্তিক লোন ও মুনাফা হিসাবের অ্যাপ।  
-Web এবং Android—দুই জায়গাতেই চলে।
+Dena হলো Bengali loan, interest, usury, and munafa management app for personal lenders and small finance tracking.  
+React + Vite + Capacitor + Android WorkManager দিয়ে build করা professional Web/Android solution।
+
+## Tech Stack
+
+- `React 19` + `Vite 8`
+- `Capacitor 8` (`@capacitor/android`, `@capacitor/core`)
+- `Android WorkManager` (`androidx.work:work-runtime`)
+- `ESLint` (code quality)
+- `GitHub Actions` (Android signed APK build + release)
 
 ## PC-তে কী কী software লাগবে
 
@@ -57,7 +65,7 @@ gradlew.bat assembleDebug
 `defaultConfig` এর ভিতরে:
 
 - `versionCode` (প্রতি রিলিজে বাড়াতে হবে)
-- `versionName` (যেমন: `2.5`)
+- `versionName` (যেমন: `2.7`)
 
 ## GitHub Actions release
 
@@ -69,8 +77,9 @@ Push দিলে:
 
 - signed APK build হয়
 - artifact upload হয়
-- `versionName` থেকে tag/release হয় (যেমন: `v2.5`)
-- APK release asset হিসেবে attach হয়
+- `android/app/build.gradle` থেকে `versionName`/`versionCode` পড়ে
+- `versionName` থেকে tag/release হয় (যেমন: `v2.7`)
+- APK release asset হিসেবে attach হয় (যেমন: `Dena-v2.7.apk`)
 
 ## ব্যাকআপ সম্পর্কে
 
