@@ -114,7 +114,7 @@ export default function LoanDetailsModal({ loan, onClose, onEdit }) {
             <p className="text-base font-bold text-pure">{toBnAmount(loan.principal)} ৳</p>
           </div>
           <div className="loan-details-item">
-            <span className="text-xs text-muted">সাপ্তাহিক লাভ</span>
+            <span className="text-xs text-muted">সাপ্তাহিক মুনাফা</span>
             <p className="text-base font-bold text-pure">{toBnAmount(loan.interestPerWeek)} ৳</p>
           </div>
           <div className="loan-details-item">
@@ -167,7 +167,7 @@ export default function LoanDetailsModal({ loan, onClose, onEdit }) {
                 <div key={`${payment.date}-${index}`} className="loan-history-item">
                   <span className="text-sm text-secondary">{formatBnDate(payment.date)}</span>
                   <span className="text-sm font-bold" style={{ color: payment.type === 'SETTLEMENT' ? 'var(--color-success)' : 'var(--color-warning)' }}>
-                    {payment.type === 'SETTLEMENT' ? 'পরিশোধ' : 'লাভ'}: {toBnAmount(payment.amount)} ৳
+                    {payment.type === 'SETTLEMENT' ? 'পরিশোধ' : 'মুনাফা'}: {toBnAmount(payment.amount)} ৳
                   </span>
                 </div>
               ))}
@@ -193,6 +193,7 @@ export default function LoanDetailsModal({ loan, onClose, onEdit }) {
                 type="button"
                 className="image-viewer-close"
                 onClick={() => setIsImageViewerOpen(false)}
+                aria-label="বন্ধ করুন"
               >
                 &times;
               </button>
@@ -214,7 +215,7 @@ export default function LoanDetailsModal({ loan, onClose, onEdit }) {
                       -
                     </button>
                     <button type="button" className="btn btn-secondary btn-sm" onClick={() => resetTransform()}>
-                      Reset
+                      রিসেট
                     </button>
                     <button type="button" className="btn btn-secondary btn-sm" onClick={() => zoomIn()}>
                       +
