@@ -45,6 +45,15 @@ Windows হলে command চালাতে:
 
 ## লোকাল চালাতে
 
+প্রথমে project clone করুন:
+
+```bash
+git clone https://github.com/onelifeproject/dena-app
+cd dena-app
+```
+
+তারপর dependency install করে app চালান:
+
 ```bash
 npm install
 npm run dev
