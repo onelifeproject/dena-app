@@ -1,42 +1,17 @@
 export const generateId = () => Math.random().toString(36).substr(2, 9);
 const LOANS_KEY = 'denaLoans';
-const LEGACY_LOANS_KEY = 'usuryLoans';
 const PROFIT_INTERVAL_KEY = 'denaProfitIntervalDays';
-const LEGACY_PROFIT_INTERVAL_KEY = 'usuryProfitIntervalDays';
 const DEFAULT_PROFIT_INTERVAL_DAYS = 7;
 const PROFIT_PRESET_KEY = 'denaProfitPreset';
-const LEGACY_PROFIT_PRESET_KEY = 'usuryProfitPreset';
 const DEFAULT_PROFIT_PRESET = {
   principal: 5000,
   interest: 500,
 };
 const AUTO_BACKUP_CONFIG_KEY = 'denaAutoBackupConfig';
-const LEGACY_AUTO_BACKUP_CONFIG_KEY = 'usuryAutoBackupConfig';
 const LAST_AUTO_BACKUP_AT_KEY = 'denaLastAutoBackupAt';
-const LEGACY_LAST_AUTO_BACKUP_AT_KEY = 'usuryLastAutoBackupAt';
 const DEFAULT_AUTO_BACKUP_CONFIG = {
   enabled: false,
   intervalDays: 1,
-};
-
-const getStorageItemWithLegacy = (key, legacyKey) => {
-  const currentValue = localStorage.getItem(key);
-  if (currentValue !== null) return currentValue;
-  if (!legacyKey) return null;
-
-  const legacyValue = localStorage.getItem(legacyKey);
-  if (legacyValue === null) return null;
-
-  localStorage.setItem(key, legacyValue);
-  localStorage.removeItem(legacyKey);
-  return legacyValue;
-};
-
-const setStorageItemWithLegacy = (key, value, legacyKey) => {
-  localStorage.setItem(key, value);
-  if (legacyKey) {
-    localStorage.removeItem(legacyKey);
-  }
 };
 
 const normalizeProfitIntervalDays = (value) => {
@@ -69,28 +44,28 @@ const normalizeAutoBackupConfig = (value) => {
 };
 
 export const getLoans = () => {
-  const data = getStorageItemWithLegacy(LOANS_KEY, LEGACY_LOANS_KEY);
+  const data = localStorage.getItem(LOANS_KEY);
   return data ? JSON.parse(data) : [];
 };
 
 export const saveLoans = (loans) => {
-  setStorageItemWithLegacy(LOANS_KEY, JSON.stringify(loans), LEGACY_LOANS_KEY);
+  localStorage.setItem(LOANS_KEY, JSON.stringify(loans));
 };
 
 export const getProfitIntervalDays = () => {
-  const raw = getStorageItemWithLegacy(PROFIT_INTERVAL_KEY, LEGACY_PROFIT_INTERVAL_KEY);
+  const raw = localStorage.getItem(PROFIT_INTERVAL_KEY);
   if (!raw) return DEFAULT_PROFIT_INTERVAL_DAYS;
   return normalizeProfitIntervalDays(raw);
 };
 
 export const saveProfitIntervalDays = (days) => {
   const normalized = normalizeProfitIntervalDays(days);
-  setStorageItemWithLegacy(PROFIT_INTERVAL_KEY, String(normalized), LEGACY_PROFIT_INTERVAL_KEY);
+  localStorage.setItem(PROFIT_INTERVAL_KEY, String(normalized));
   return normalized;
 };
 
 export const getProfitPreset = () => {
-  const raw = getStorageItemWithLegacy(PROFIT_PRESET_KEY, LEGACY_PROFIT_PRESET_KEY);
+  const raw = localStorage.getItem(PROFIT_PRESET_KEY);
   if (!raw) return DEFAULT_PROFIT_PRESET;
 
   try {
@@ -103,12 +78,12 @@ export const getProfitPreset = () => {
 
 export const saveProfitPreset = (preset) => {
   const normalized = normalizeProfitPreset(preset);
-  setStorageItemWithLegacy(PROFIT_PRESET_KEY, JSON.stringify(normalized), LEGACY_PROFIT_PRESET_KEY);
+  localStorage.setItem(PROFIT_PRESET_KEY, JSON.stringify(normalized));
   return normalized;
 };
 
 export const getAutoBackupConfig = () => {
-  const raw = getStorageItemWithLegacy(AUTO_BACKUP_CONFIG_KEY, LEGACY_AUTO_BACKUP_CONFIG_KEY);
+  const raw = localStorage.getItem(AUTO_BACKUP_CONFIG_KEY);
   if (!raw) return DEFAULT_AUTO_BACKUP_CONFIG;
   try {
     return normalizeAutoBackupConfig(JSON.parse(raw));
@@ -119,16 +94,12 @@ export const getAutoBackupConfig = () => {
 
 export const saveAutoBackupConfig = (config) => {
   const normalized = normalizeAutoBackupConfig(config);
-  setStorageItemWithLegacy(
-    AUTO_BACKUP_CONFIG_KEY,
-    JSON.stringify(normalized),
-    LEGACY_AUTO_BACKUP_CONFIG_KEY,
-  );
+  localStorage.setItem(AUTO_BACKUP_CONFIG_KEY, JSON.stringify(normalized));
   return normalized;
 };
 
 export const getLastAutoBackupAt = () => {
-  const raw = getStorageItemWithLegacy(LAST_AUTO_BACKUP_AT_KEY, LEGACY_LAST_AUTO_BACKUP_AT_KEY);
+  const raw = localStorage.getItem(LAST_AUTO_BACKUP_AT_KEY);
   if (!raw) return '';
   const parsed = new Date(raw);
   if (Number.isNaN(parsed.getTime())) return '';
@@ -139,7 +110,7 @@ export const saveLastAutoBackupAt = (dateValue = new Date()) => {
   const parsed = new Date(dateValue);
   if (Number.isNaN(parsed.getTime())) return '';
   const value = parsed.toISOString();
-  setStorageItemWithLegacy(LAST_AUTO_BACKUP_AT_KEY, value, LEGACY_LAST_AUTO_BACKUP_AT_KEY);
+  localStorage.setItem(LAST_AUTO_BACKUP_AT_KEY, value);
   return value;
 };
 
