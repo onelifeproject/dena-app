@@ -17,6 +17,7 @@ There is no backend API. All business data is stored in browser/app `localStorag
 - Frontend: React 19, Vite 8
 - Native shell: Capacitor 8 (`@capacitor/core`, `@capacitor/android`)
 - Native app lifecycle: `@capacitor/app` (Android back-button interception)
+- Android background scheduler: `androidx.work:work-runtime` (WorkManager)
 - Date input: `react-datepicker`
 - Image handling: `react-image-crop`, `react-easy-crop`
 - Image zoom/pan viewer: `react-zoom-pan-pinch`
@@ -50,6 +51,8 @@ There is no backend API. All business data is stored in browser/app `localStorag
   - `index.css`: full app styling
 - `public/`: static assets (`icons.svg`)
 - `android/`: Capacitor Android project (Gradle, resources, `MainActivity`)
+  - `AutoBackupWorker.java`: periodic background backup worker
+  - `BackupWorkScheduler.java`: enqueues unique periodic work
 - `.github/workflows/build-android.yml`: Android CI build
 
 ## Domain Model (Current Data Contract)
@@ -71,9 +74,16 @@ Loan object (stored in `usuryLoans` array):
 - `nextPaymentDate`: ISO datetime string
 - `payments`: array of payment entries
 
-Settings value (stored separately):
+Settings and UI state values (stored separately):
 
 - `usuryProfitIntervalDays`: number (default `7`)
+- `usuryProfitPreset`: object `{ principal, interest }` (default `5000 -> 500`)
+- `usuryAutoBackupConfig`: object `{ enabled, intervalDays }` (default `enabled: false`, `intervalDays: 1`)
+- `usuryLastAutoBackupAt`: ISO datetime string
+- `usuryLastManualBackupAt`: ISO datetime string
+- `usuryFirstRunSettingsShown`: `"1"` after first-run settings auto-open is shown
+- `usuryDashboardFilters`: object `{ activeTab, selectedYear, selectedMonth }`
+- `usuryAutoBackupSnapshot`: web-only local auto-backup JSON snapshot (used instead of auto file download)
 
 Payment entry:
 
@@ -118,10 +128,24 @@ Payment entry:
 - Loan cards and summary stat cards have status-based glow styles and animated lighting sweep.
 - Mobile tap/press feedback is tuned to stay clipped inside rounded corners and avoid full-card false press feedback when tapping action buttons.
 - Settings is a dedicated responsive modal (opened from footer-area settings button).
-- Settings includes backup, restore, profit interval control, and toggleable notification test options.
+- On fresh install / fresh app-data state, Settings modal auto-opens once (first-run guidance).
+- Settings includes:
+  - Auto Munafa settings (principal -> munafa rule + munafa interval days, saved together)
+  - Auto Backup settings (instant toggle on/off, custom interval days)
+  - Manual Backup
+  - Restore
+  - Toggleable notification test options
+- Manual Backup card shows last manual backup time for transparency.
 - Restore uses in-app confirmation modal (not browser native `confirm`) for consistent responsive UI.
 - Loan details header is mobile-optimized: title left, close button pinned top-right, edit button on a separate row.
 - Footer copyright year now auto-renders as dynamic Bengali range (`২০২৬`, `২০২৬–২০২৭`, `২০২৬–২০২৮`, ...).
+- Bangla wording is standardized around `মুনাফা` (replacing legacy `লাভ` copy).
+- Modal close (`×`) controls are visually unified with the highlighted close-button style used in loan details.
+- Heavy modal flows are lazy-loaded:
+  - `AddLoanForm`
+  - `LoanDetailsModal`
+  - `DocumentCropModal`
+  - shared zoom viewer modal
 
 ## Recent Change Log (2026-04)
 
@@ -149,6 +173,35 @@ Payment entry:
   - close icon stays top-right with highlighted border/background
   - edit button has separate responsive row for small screens
 - Added auto-updating Bengali footer year range (base year ২০২৬).
+- Added editable Auto Munafa preset (`principal -> interest`) and connected it to Add/Edit loan auto-calculation.
+- Auto Munafa save now also applies interval-day changes to active loans immediately.
+- Added first-run-only Settings modal auto-open via `usuryFirstRunSettingsShown`.
+- Added richer Settings feedback: highlighted saved-status text for Auto Munafa values.
+- Added Auto Backup configuration:
+  - instant toggle save (no extra save button for on/off)
+  - custom day interval
+  - last auto-backup timestamp display
+  - periodic due check and run while app is active
+- Added Android WorkManager-based background backup flow:
+  - schedules unique periodic worker from `MainActivity`
+  - worker reads mirrored backup source/meta from app data
+  - writes due backup files with timestamped names
+  - keeps battery/RAM impact low via lightweight checks + early exits
+- Auto backup/manual backup payload now includes full app state needed for practical restore:
+  - loans (ACTIVE + DONE + payment history)
+  - munafa settings
+  - auto backup settings
+  - manual backup timestamp
+  - dashboard filter state
+  - first-run shown flag
+  - last auto-backup timestamp
+- Backup and restore settings UI was split into distinct cards:
+  - Auto Backup
+  - Manual Backup
+  - Restore
+- Dashboard filters were lifted to App-level persisted state to allow backup/restore continuity.
+- Unified close-icon styling across modals and image viewers.
+- Optimized initial bundle by lazy-loading heavy modal/viewer code paths.
 
 ## Commands
 
