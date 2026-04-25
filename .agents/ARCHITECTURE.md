@@ -30,6 +30,8 @@ Important: `getLoans()` assumes valid JSON and has no parse fallback, so malform
 - `isSettingsOpen`: settings modal visibility
 - `isSettingsTestOpen`: settings test panel visibility
 - `profitIntervalDraft`: editable profit interval value in settings
+- `updateInfo` / `isUpdateModalOpen`: in-app updater state from GitHub releases
+- `isNativeRestorePickerOpen`: native restore file-picker modal (`Documents/Dena`)
 - `isAddingLoan`: controls add modal visibility
 - `activePaymentModal`: `{ show, loan, isSettle }`
 - `activeDeleteModal`: `{ show, loan }`
@@ -53,6 +55,9 @@ Pattern used:
 
 - Constant key used directly: `denaLoans`
 - Settings key: `denaProfitIntervalDays` (default `7`, bounded `1..365`)
+- Other persisted UI/config keys include:
+  - `denaLastUpdateCheckAt` (update check throttle timestamp)
+  - `denaCurrentAppVersion` (cached installed app version for update UI)
 
 ### ID generation
 
@@ -142,6 +147,12 @@ Pattern used:
   - 1-second ticking Bengali date/time for `Asia/Dhaka`
 - `NotificationDebugPanel.jsx`
   - now rendered inside Settings modal test section (not logo-tap trigger)
+- `App.jsx` (updater + restore extensions)
+  - checks latest GitHub release (`/releases/latest`)
+  - compares with installed app version and opens update modal when newer
+  - downloads APK with in-app progress UI
+  - hands off install via system share/open dialog
+  - provides native restore list from `Documents/Dena/*.json`
 
 ## 6) Timezone and Date Behavior
 
@@ -194,10 +205,12 @@ Android interaction behavior:
 - Back priority closes overlays in this order:
   1. loan details modal
   2. delete modal
-  3. payment modal
-  4. add-loan modal
-  5. settings modal
-  6. restore confirmation modal
+  3. native restore file-picker modal
+  4. update modal
+  5. payment modal
+  6. add-loan modal
+  7. settings modal
+  8. restore confirmation modal
 - Only when no modal is open, app falls back to navigation/back exit flow.
 
 CI automation:
@@ -213,6 +226,8 @@ CI automation:
 - `react-easy-crop` (installed dependency for image handling stack)
 - `react-zoom-pan-pinch` for touch-first full-screen image viewing
 - No remote API integrations in current code
+- GitHub Releases API integration for in-app update checks:
+  - `https://api.github.com/repos/onelifeproject/dena-app/releases/latest`
 - Optional Google Services plugin in Gradle if `google-services.json` exists
 
 ## 10) Testing and Quality Status
@@ -238,6 +253,10 @@ CI automation:
 - Refined mobile tap behavior so rounded buttons and tabs keep press effects clipped inside shape.
 - Reduced mobile false-hover artifacts on touch devices (coarse pointer media queries).
 - Added responsive Settings modal and custom restore confirm modal.
+- Added centered section titles above Settings cards (homepage-style underline).
+- Added native restore picker modal for `Documents/Dena` backup files.
+- Added in-app updater modal with release-note preview, APK download progress, and install handoff.
+- Added visible inline update-check status text inside Settings (mobile-friendly feedback).
 - Added responsive safeguards for small-device buttons (including settings/test panels).
 - Updated loan details modal header responsiveness and close icon highlight styling.
 - Added dynamic Bengali footer copyright year range.

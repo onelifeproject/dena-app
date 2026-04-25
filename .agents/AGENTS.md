@@ -84,6 +84,8 @@ Settings and UI state values (stored separately):
 - `denaFirstRunSettingsShown`: `"1"` after first-run settings auto-open is shown
 - `denaDashboardFilters`: object `{ activeTab, selectedYear, selectedMonth }`
 - `denaAutoBackupSnapshot`: web-only local auto-backup JSON snapshot (used instead of auto file download)
+- `denaLastUpdateCheckAt`: last auto update-check timestamp
+- `denaCurrentAppVersion`: cached installed app version for update UI
 
 Payment entry:
 
@@ -133,10 +135,13 @@ Payment entry:
   - Auto Munafa settings (principal -> munafa rule + munafa interval days, saved together)
   - Auto Backup settings (instant toggle on/off, custom interval days)
   - Manual Backup
-  - Restore
+  - Restore (native Android option lists backup files from `Documents/Dena` directly)
+  - App Update (GitHub latest release check + in-app APK download progress + install handoff)
   - Toggleable notification test options
 - Manual Backup card shows last manual backup time for transparency.
 - Restore uses in-app confirmation modal (not browser native `confirm`) for consistent responsive UI.
+- Settings cards now use centered section titles above each card (homepage-style underline).
+- App update checks are throttled by local timestamp (~12 hours) and can be triggered manually from Settings.
 - Loan details header is mobile-optimized: title left, close button pinned top-right, edit button on a separate row.
 - Footer copyright year now auto-renders as dynamic Bengali range (`২০২৬`, `২০২৬–২০২৭`, `২০২৬–২০২৮`, ...).
 - Bangla wording is standardized around `মুনাফা` (replacing legacy `লাভ` copy).
@@ -199,9 +204,15 @@ Payment entry:
   - Auto Backup
   - Manual Backup
   - Restore
+- Added native restore picker modal that reads `Documents/Dena/*.json` and restores on tap.
 - Dashboard filters were lifted to App-level persisted state to allow backup/restore continuity.
 - Unified close-icon styling across modals and image viewers.
 - Optimized initial bundle by lazy-loading heavy modal/viewer code paths.
+- Added in-app updater using GitHub latest release API:
+  - current-version detection and local cache
+  - update-available modal with release notes preview
+  - APK download progress UI
+  - install handoff via system share/open flow
 
 ## Commands
 
