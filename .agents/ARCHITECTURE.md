@@ -18,7 +18,7 @@ No server, API, or database is currently part of the architecture.
 - Browser loads `index.html`, then `src/main.jsx`.
 - `main.jsx` mounts `<App />` in React StrictMode.
 - `App.jsx` initializes `loans` from `getLoans()` in state initializer.
-- `getLoans()` reads and parses `localStorage.getItem("denaLoans")` (with legacy fallback from `usuryLoans`).
+- `getLoans()` reads and parses `localStorage.getItem("denaLoans")`.
 
 Important: `getLoans()` assumes valid JSON and has no parse fallback, so malformed storage can throw.
 
@@ -51,8 +51,8 @@ Pattern used:
 
 ### Storage key
 
-- Constant key used directly: `denaLoans` (legacy: `usuryLoans`)
-- Settings key: `denaProfitIntervalDays` (default `7`, bounded `1..365`, legacy fallback supported)
+- Constant key used directly: `denaLoans`
+- Settings key: `denaProfitIntervalDays` (default `7`, bounded `1..365`)
 
 ### ID generation
 
@@ -83,7 +83,7 @@ Pattern used:
 
 ### Profit interval setting logic
 
-- `getProfitIntervalDays()` reads `denaProfitIntervalDays` (legacy fallback to `usuryProfitIntervalDays`) with fallback to `7`.
+- `getProfitIntervalDays()` reads `denaProfitIntervalDays` with fallback to `7`.
 - `saveProfitIntervalDays(days)` normalizes and persists value.
 - `applyProfitIntervalToActiveLoans(days)`:
   - persists the new interval

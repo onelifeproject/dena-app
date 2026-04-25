@@ -35,7 +35,7 @@ There is no backend API. All business data is stored in browser/app `localStorag
    - optional crop (`DocumentCropModal`)
    - compression (`src/utils/imageCompression.js`)
    - store compressed image metadata in loan record
-6. `loanManager.js` mutates loan array and persists to `localStorage` key `denaLoans` (legacy `usuryLoans` is auto-migrated).
+6. `loanManager.js` mutates loan array and persists to `localStorage` key `denaLoans`.
 7. UI re-renders from state updates in `App.jsx`.
 
 ## Repository Map
@@ -84,7 +84,6 @@ Settings and UI state values (stored separately):
 - `denaFirstRunSettingsShown`: `"1"` after first-run settings auto-open is shown
 - `denaDashboardFilters`: object `{ activeTab, selectedYear, selectedMonth }`
 - `denaAutoBackupSnapshot`: web-only local auto-backup JSON snapshot (used instead of auto file download)
-- Legacy `usury...` keys are read once and auto-migrated to `dena...` keys.
 
 Payment entry:
 
@@ -237,7 +236,7 @@ Workflow: `.github/workflows/build-android.yml` (`Android Signed Release Build`)
 ## Guardrails for Future Agents
 
 - Do not introduce backend/API assumptions unless explicitly requested.
-- Keep `localStorage` writes on `dena...` keys; maintain read fallback for legacy `usury...` keys.
+- Use only `dena...` keys for `localStorage`.
 - Treat `src/utils/loanManager.js` as source of truth for business logic.
 - Keep Bengali UX text and locale behavior unless user requests language changes.
 - If changing loan schema, update create/read/update paths and backward compatibility.
