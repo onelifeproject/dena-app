@@ -4,14 +4,32 @@ Loan and weekly-interest tracking app (Bengali UI), built with React + Vite and 
 
 ## What's New (2026-04)
 
-- Android back swipe/button now closes open modals first (instead of abruptly exiting app).
-- Loan proof images can be saved directly on native Android to `Documents/Dena/`.
-- Loan proof image viewer now supports full-screen pinch zoom/pan in:
-  - loan details modal
-  - add-loan preview modal
-- Settled (`পরিশোধিত`) cards now keep only meaningful action (`মুছে ফেলুন`).
-- Loan cards and summary cards now include stronger status-based highlight/glow styling.
-- Mobile tap/pressed states were refined so rounded buttons stay visually clipped and consistent.
+- Settings now opens automatically once on first install/run.
+- Auto Munafa settings:
+  - principal -> munafa rule (example: `5000 -> 500`)
+  - munafa interval days
+  - highlighted saved-status note
+- Settings split into clear cards:
+  - Auto Backup
+  - Manual Backup
+  - Restore
+  - Test Options
+- Backup payload now captures full app state:
+  - all loans (active + done + payment history)
+  - munafa settings
+  - backup settings
+  - dashboard filters (tab/year/month)
+  - first-run flag
+  - last backup timestamps
+- Auto backup upgrades:
+  - in-app auto backup (web + native behavior)
+  - Android WorkManager background scheduling for closed-app periodic backup checks
+- Manual backup card now shows last manual backup time.
+- UI consistency updates:
+  - Bangla wording standardized to `মুনাফা`
+  - all close icons unified
+- Performance optimization:
+  - heavy modals now lazy-loaded (smaller initial JS bundle).
 
 ## Run Locally
 
@@ -34,6 +52,13 @@ Release APK output:
   - `npx cap sync android`
   - `cd android`
   - `gradlew.bat clean assembleRelease`
+
+Debug build check:
+
+```bash
+cd android
+gradlew.bat assembleDebug
+```
 
 ## Where To Change Version (Important)
 
@@ -66,7 +91,25 @@ defaultConfig {
    - `npm run lint`
    - `npm run build`
    - `npx cap sync android`
+   - `cd android && gradlew.bat assembleDebug`
 5. Push to GitHub and verify workflow artifact name matches version.
+
+## Backup & Restore Behavior
+
+- Manual backup creates JSON backup file with full app state.
+- Restore replaces current app state using selected backup file.
+- Auto backup:
+  - can be enabled/disabled from Settings
+  - interval days is configurable
+  - Android uses background WorkManager checks for due backups
+  - web uses local snapshot for auto mode (browser auto-download limits)
+
+## JDK/Gradle Note (Windows)
+
+If Android Gradle build fails with `Unsupported class file major version`, use JDK 21 for Gradle daemon.
+
+- Project is configured via `android/gradle.properties`:
+  - `org.gradle.java.home=...jdk-21...`
 
 ## Notification Notes
 
