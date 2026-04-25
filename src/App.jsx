@@ -40,6 +40,7 @@ import {
 
 const FIRST_RUN_SETTINGS_KEY = 'usuryFirstRunSettingsShown';
 const DASHBOARD_FILTERS_KEY = 'usuryDashboardFilters';
+const LAST_MANUAL_BACKUP_AT_KEY = 'usuryLastManualBackupAt';
 const AUTO_BACKUP_SOURCE_PATH = 'Dena/auto-backup-source.json';
 const AUTO_BACKUP_META_PATH = 'Dena/auto-backup-meta.json';
 
@@ -91,6 +92,7 @@ export default function App() {
   const [autoBackupConfig, setAutoBackupConfig] = useState(() => getAutoBackupConfig());
   const [autoBackupIntervalDraft, setAutoBackupIntervalDraft] = useState(() => String(getAutoBackupConfig().intervalDays));
   const [lastAutoBackupAt, setLastAutoBackupAt] = useState(() => getLastAutoBackupAt());
+  const [lastManualBackupAt, setLastManualBackupAt] = useState(() => localStorage.getItem(LAST_MANUAL_BACKUP_AT_KEY) || '');
   const [pendingRestoreLoans, setPendingRestoreLoans] = useState(null);
   const [pendingRestoreProfitIntervalDays, setPendingRestoreProfitIntervalDays] = useState(null);
   const [pendingRestoreProfitPreset, setPendingRestoreProfitPreset] = useState(null);
@@ -98,6 +100,7 @@ export default function App() {
   const [pendingRestoreDashboardFilters, setPendingRestoreDashboardFilters] = useState(null);
   const [pendingRestoreFirstRunSettingsShown, setPendingRestoreFirstRunSettingsShown] = useState(null);
   const [pendingRestoreLastAutoBackupAt, setPendingRestoreLastAutoBackupAt] = useState(null);
+  const [pendingRestoreLastManualBackupAt, setPendingRestoreLastManualBackupAt] = useState(null);
   const [pendingRestoreFileName, setPendingRestoreFileName] = useState('');
   const [isAddingLoan, setIsAddingLoan] = useState(false);
   const [editingLoanId, setEditingLoanId] = useState(null);
@@ -202,6 +205,7 @@ export default function App() {
           setPendingRestoreDashboardFilters(null);
           setPendingRestoreFirstRunSettingsShown(null);
           setPendingRestoreLastAutoBackupAt(null);
+          setPendingRestoreLastManualBackupAt(null);
           setPendingRestoreFileName('');
           return;
         }
@@ -343,6 +347,7 @@ export default function App() {
     profitPreset: getProfitPreset(),
     autoBackupConfig: getAutoBackupConfig(),
     lastAutoBackupAt: getLastAutoBackupAt(),
+    lastManualBackupAt: localStorage.getItem(LAST_MANUAL_BACKUP_AT_KEY) || '',
     firstRunSettingsShown: localStorage.getItem(FIRST_RUN_SETTINGS_KEY) === '1',
     dashboardFilters,
     loans,
@@ -369,8 +374,14 @@ export default function App() {
           directory: Directory.Documents,
           recursive: true,
         });
-        const backupTime = saveLastAutoBackupAt();
-        setLastAutoBackupAt(backupTime);
+        const backupTime = new Date().toISOString();
+        if (isAuto) {
+          const autoBackupTime = saveLastAutoBackupAt(backupTime);
+          setLastAutoBackupAt(autoBackupTime);
+        } else {
+          localStorage.setItem(LAST_MANUAL_BACKUP_AT_KEY, backupTime);
+          setLastManualBackupAt(backupTime);
+        }
         setSettingsStatus(`${isAuto ? 'অটো ব্যাকআপ' : 'ব্যাকআপ'} সম্পন্ন: Documents/Dena/${backupFileName}`);
         return;
       }
@@ -384,8 +395,14 @@ export default function App() {
       anchor.click();
       document.body.removeChild(anchor);
       URL.revokeObjectURL(url);
-      const backupTime = saveLastAutoBackupAt();
-      setLastAutoBackupAt(backupTime);
+      const backupTime = new Date().toISOString();
+      if (isAuto) {
+        const autoBackupTime = saveLastAutoBackupAt(backupTime);
+        setLastAutoBackupAt(autoBackupTime);
+      } else {
+        localStorage.setItem(LAST_MANUAL_BACKUP_AT_KEY, backupTime);
+        setLastManualBackupAt(backupTime);
+      }
       setSettingsStatus(`${isAuto ? 'অটো ব্যাকআপ' : 'ব্যাকআপ'} ডাউনলোড হয়েছে: ${backupFileName}`);
     } catch (error) {
       console.error('Backup failed:', error);
@@ -406,6 +423,7 @@ export default function App() {
         dashboardFilters: null,
         firstRunSettingsShown: null,
         lastAutoBackupAt: null,
+        lastManualBackupAt: null,
       };
     }
     if (Array.isArray(parsed?.loans)) {
@@ -417,6 +435,7 @@ export default function App() {
         dashboardFilters: parsed.dashboardFilters ?? null,
         firstRunSettingsShown: parsed.firstRunSettingsShown ?? null,
         lastAutoBackupAt: parsed.lastAutoBackupAt ?? null,
+        lastManualBackupAt: parsed.lastManualBackupAt ?? null,
       };
     }
     throw new Error('অকার্যকর ব্যাকআপ ফরম্যাট');
@@ -437,6 +456,7 @@ export default function App() {
       setPendingRestoreDashboardFilters(restoredData.dashboardFilters);
       setPendingRestoreFirstRunSettingsShown(restoredData.firstRunSettingsShown);
       setPendingRestoreLastAutoBackupAt(restoredData.lastAutoBackupAt);
+      setPendingRestoreLastManualBackupAt(restoredData.lastManualBackupAt);
       setPendingRestoreFileName(file.name);
     } catch (error) {
       console.error('Restore failed:', error);
@@ -480,6 +500,10 @@ export default function App() {
       const restoredBackupAt = saveLastAutoBackupAt(pendingRestoreLastAutoBackupAt);
       setLastAutoBackupAt(restoredBackupAt);
     }
+    if (pendingRestoreLastManualBackupAt) {
+      localStorage.setItem(LAST_MANUAL_BACKUP_AT_KEY, pendingRestoreLastManualBackupAt);
+      setLastManualBackupAt(pendingRestoreLastManualBackupAt);
+    }
     setLoans(getLoans());
     setActiveLoanDetailsId(null);
     setEditingLoanId(null);
@@ -492,6 +516,7 @@ export default function App() {
     setPendingRestoreDashboardFilters(null);
     setPendingRestoreFirstRunSettingsShown(null);
     setPendingRestoreLastAutoBackupAt(null);
+    setPendingRestoreLastManualBackupAt(null);
     setPendingRestoreFileName('');
     setSettingsStatus(`ব্যাকআপ ফিরিয়ে আনা সম্পন্ন: ${pendingRestoreFileName}`);
   };
@@ -504,6 +529,7 @@ export default function App() {
     setPendingRestoreDashboardFilters(null);
     setPendingRestoreFirstRunSettingsShown(null);
     setPendingRestoreLastAutoBackupAt(null);
+    setPendingRestoreLastManualBackupAt(null);
     setPendingRestoreFileName('');
   };
 
@@ -846,6 +872,11 @@ export default function App() {
                 <p className="text-sm font-semibold">ম্যানুয়াল ব্যাকআপ</p>
                 <p className="text-xs text-muted settings-card-help">
                   প্রয়োজন হলে এখনই পুরো অ্যাপের ব্যাকআপ ফাইল তৈরি করুন।
+                </p>
+                <p className="text-xs text-muted settings-card-help">
+                  {lastManualBackupAt
+                    ? `সর্বশেষ ম্যানুয়াল ব্যাকআপ: ${new Date(lastManualBackupAt).toLocaleString('bn-BD')}`
+                    : 'এখনও কোনো ম্যানুয়াল ব্যাকআপ হয়নি।'}
                 </p>
                 <div className="settings-backup-actions">
                   <button
